@@ -1,0 +1,1 @@
+This is in no way usable yet. I've simply added it to Github to manage the code.
