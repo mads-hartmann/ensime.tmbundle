@@ -27,10 +27,14 @@ module Ensime
     end
     
     def initialize_project
-      msg = "(:swank-rpc (swank:connection-info) 1)"
-      full = create_message(msg)
-      @socket.print(full)
-      tmp = @socket.recv(128)
+      infoMsg = create_message("(:swank-rpc (swank:connection-info) 1)")
+      projectMsg = create_message("(:swank-rpc (swank:init-project #{read_project_file}) 2)")
+
+      @socket.print(infoMsg)
+      @socket.recv(256) # throwing away the value
+      @socket.print(projectMsg)
+      @socket.recv(256) # throwing away the value
+      @socket.print("EOF")
       # TODO: what to do with the answer?
     end
     
@@ -53,6 +57,11 @@ module Ensime
       return TCPSocket.open("127.0.0.1", port)      
     end
     
+    # TODO: What if there's not project file
+    def read_project_file
+      contents = File.open(ENV['TM_PROJECT_DIRECTORY'] + "/.ensime", "rb") { |f| f.read }
+      return contents
+    end
   end
   
   # This is NOT The ENSIME server but a small server that can 
@@ -75,7 +84,7 @@ module Ensime
       TextMate::HTMLOutput.show(
         :title => "Textmate ENSIME Server", 
         :sub_title => "Logs", 
-        :html_head => script_style_header) do |io|
+        :html_head => Helper.new.script_style_header) do |io|
         
         
         io << "<pre></code>"
@@ -83,17 +92,19 @@ module Ensime
         port = pick_port
         server = TCPServer.open(port)   
         loop {  # Servers run forever                        
-          Thread.start(server.accept) do |client|
-            msg = client.recv(128)
-            io << "<p>Forwarding message:\n#{msg}\n</p>"
-            @socket.print(msg)
-            response = @socket.recv(128)
-            client.print(response)    # Send the time to the client
+          # Thread.start(server.accept) do |client|
+            client = server.accept
+            while((msg = client.recv(256)) != "EOF")
+              io << "<p>Forwarding message:\n#{msg}\n</p>"
+              @socket.print(msg)
+              response = @socket.recv(256)
+              client.print(response)    # Send the time to the client
+            end
             client.close              # Disconnect from the client
-          end
+          # end
         }
         
-        io << "<code></pre>"
+        io << "</code></pre>"
         
       end  
     end
@@ -120,8 +131,10 @@ module Ensime
       port = file.gets.to_i
       file.close
       return TCPSocket.open("127.0.0.1", port)      
-    end
-    
+    end    
+  end
+  
+  class Helper
     def script_style_header
       return <<-HTML
   <!-- executor javascripts -->
@@ -215,6 +228,6 @@ module Ensime
   </style>
   HTML
     end
-    
   end
+  
 end

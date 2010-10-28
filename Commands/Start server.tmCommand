@@ -7,11 +7,34 @@
 	<key>command</key>
 	<string>#!/usr/bin/env ruby -wKU
 
-ENSIME_HOME = "/Users/Mads/dev/tools/emacs_config/ensime.0.1.3"
-ENSIME_SH = "./bin/server.sh"
+SUPPORT_LIB = ENV['TM_SUPPORT_PATH'] + '/lib/'
+
+require SUPPORT_LIB + 'tm/process'
+require SUPPORT_LIB + 'tm/htmloutput'
+require ENV['TM_BUNDLE_SUPPORT'] + '/ensime.rb'
+
+ENSIME_HOME = "/Users/Mads/dev/tools/emacs_config/ensime_2.8.1.RC3-0.3.7"
+ENSIME_SH = "#{ENSIME_HOME}/bin/server.sh"
 TEMP_FILE = ENV['TM_PROJECT_DIRECTORY'] + "/ensime_port"
 
-puts "cd #{ENSIME_HOME} &amp;&amp; #{ENSIME_SH} #{TEMP_FILE}"</string>
+#puts "cd #{ENSIME_HOME} &amp;&amp; #{ENSIME_SH} #{TEMP_FILE}"
+
+TextMate::HTMLOutput.show(
+  :title =&gt; "Textmate ENSIME Server", 
+  :sub_title =&gt; "Logs", 
+  :html_head =&gt; Ensime::Helper.new.script_style_header) do |io|
+    
+    io &lt;&lt; "&lt;pre&gt;&lt;/code&gt;"
+    
+    TextMate::Process.run(ENSIME_SH,TEMP_FILE) do |str|
+      io &lt;&lt; "&lt;p&gt;#{str}&lt;/p&gt;"
+    end
+    
+    io &lt;&lt; "&lt;/code&gt;&lt;/pre&gt;"
+end
+
+
+# TextMate::Executor.run("cd",ENSIME_HOME)</string>
 	<key>input</key>
 	<string>selection</string>
 	<key>name</key>

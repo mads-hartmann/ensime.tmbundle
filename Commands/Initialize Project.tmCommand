@@ -15,7 +15,7 @@ Ensime::Client.new.initialize_project</string>
 	<key>name</key>
 	<string>Initialize Project</string>
 	<key>output</key>
-	<string>showAsHTML</string>
+	<string>showAsTooltip</string>
 	<key>scope</key>
 	<string>source.scala</string>
 	<key>uuid</key>
