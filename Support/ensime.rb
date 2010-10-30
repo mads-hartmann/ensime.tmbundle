@@ -14,7 +14,7 @@ module Ensime
   MESSAGE_HEADER_SIZE = 6
   TM_SERVER_PORT_FILE = ENV['TM_PROJECT_DIRECTORY'] + "/tm_port"
   ENSIME_PORT_FILE = ENV['TM_PROJECT_DIRECTORY'] + "/ensime_port"
-  
+    
   # This is the client. Create an instance of this class to 
   # interact with the ensime backend. 
   # It does in fact communicate with the Ensime:Server which
@@ -24,29 +24,39 @@ module Ensime
     
     def initialize
       @socket = connect
+      @helper = MessageHelper.new
     end
     
     def initialize_project
-      infoMsg = create_message("(:swank-rpc (swank:connection-info) 1)")
-      projectMsg = create_message("(:swank-rpc (swank:init-project #{read_project_file}) 2)")
+      infoMsg = @helper.prepend_length("(swank:connection-info)")
+      projectMsg = @helper.prepend_length("(swank:init-project #{read_project_file})")
+      endMessage = @helper.prepend_length("EOF")
 
       @socket.print(infoMsg)
-      @socket.recv(256) # throwing away the value
+      puts @helper.read_message(@socket)
       @socket.print(projectMsg)
-      @socket.recv(256) # throwing away the value
-      @socket.print("EOF")
+      puts @helper.read_message(@socket)
+      @socket.print(endMessage)
       # TODO: what to do with the answer?
     end
     
-    # creates a message that the ensime backend can read. This is done
-    # by prepending the length of the message (hex-encoded).
-    def create_message(msg)
-      size = msg.length.to_s(16) # 16 bit 
-      header = size.to_s.length.upto(MESSAGE_HEADER_SIZE-1).collect{0}
-      header = header + size.split('')
-      return header.to_s + msg
+    def type_check_file(file) 
+      puts "NOT IMPLEMENTED"
+      # msg = @helper.create_message("(:swank-rpc (swank:typecheck-file ,#{file}) 3)")      
+      # @socket.print(msg)
+      # puts @helper.read_message(@socket)
     end
     
+    def type_check_all
+      msg = @helper.prepend_length("(swank:typecheck-all)")      
+      endMessage = @helper.prepend_length("EOF")
+      @socket.print(msg)
+      puts @helper.read_message(@socket)
+      @socket.print(endMessage)
+    end
+    
+    private
+        
     # Connects to the Textmate ENSIME server backend
     # TODO: What if there's no port file?
     # TODO: What if the server isn't running?    
@@ -76,6 +86,8 @@ module Ensime
     
     def initialize
       @socket = connect
+      @helper = MessageHelper.new
+      @message_count = 1
     end
     
     # Start the server. 
@@ -92,23 +104,30 @@ module Ensime
         port = pick_port
         server = TCPServer.open(port)   
         loop {  # Servers run forever                        
-          # Thread.start(server.accept) do |client|
-            client = server.accept
-            while((msg = client.recv(256)) != "EOF")
-              io << "<p>Forwarding message:\n#{msg}\n</p>"
-              @socket.print(msg)
-              response = @socket.recv(256)
-              client.print(response)    # Send the time to the client
-            end
-            client.close              # Disconnect from the client
-          # end
+          client = server.accept
+          while((msg = @helper.read_message(client)) != "EOF")
+            io << "<p>Forwarding message:\n#{msg}\n</p>"
+            # create the right message structure and forward
+            @socket.print(@helper.create_message(msg, @message_count)) 
+            increment_message_count
+            # forward the response back to the client
+            response = @helper.read_message(@socket)
+            client.print(@helper.prepend_length(response)) 
+          end
+          client.close
         }
         
         io << "</code></pre>"
-        
       end  
     end
-      
+            
+    private 
+    
+    def increment_message_count 
+      @message_count = @message_count + 1 
+    end
+    
+            
     # Write the port this server is going to use to the file
     # TM_SERVER_PORT_FILE fíle.
     # TODO: Make it select a random open port
@@ -132,6 +151,38 @@ module Ensime
       file.close
       return TCPSocket.open("127.0.0.1", port)      
     end    
+  end
+  
+  class MessageHelper
+    
+    # This simply creates a message by prepending the length of the message
+    # this is needed to the reciever knows how many bits to read.
+    def prepend_length(msg)
+      size = msg.length.to_s(16) # 16 bit 
+      header = size.to_s.length.upto(MESSAGE_HEADER_SIZE-1).collect{0}
+      header = header + size.split('')
+      return header.to_s + msg
+    end
+    
+    # creates a message that the ensime backend can read. This is done
+    # by prepending the length of the message (hex-encoded). and wrapping
+    # the message in (:swank-rpc ..msg... count)
+    def create_message(call, count)
+      msg = "(:swank-rpc #{call} #{count})"
+      size = msg.length.to_s(16) # 16 bit 
+      header = size.to_s.length.upto(MESSAGE_HEADER_SIZE-1).collect{0}
+      header = header + size.split('')
+      return header.to_s + msg
+    end
+
+    # Reads a message from the socket. The first 6 bits are the 
+    # length of the message. 
+    def read_message(socket)
+      length = socket.recv(6).to_i(16)
+      message = socket.recv(length)
+      return message
+    end
+    
   end
   
   class Helper
