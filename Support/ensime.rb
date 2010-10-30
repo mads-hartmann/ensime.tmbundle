@@ -107,11 +107,29 @@ module Ensime
           client = server.accept
           while((msg = @helper.read_message(client)) != "EOF")
             io << "<p>Forwarding message:\n#{msg}\n</p>"
+            
             # create the right message structure and forward
             @socket.print(@helper.create_message(msg, @message_count)) 
+            
+
+            # Throw away messages till we find one with the correct
+            # message number. 
+            correct_message = false
+            response = ""
+            while(!correct_message) 
+              response = @helper.read_message(@socket)
+              msgNr = response.slice(response.length-2,1).to_i
+              if msgNr == @message_count
+                correct_message = true
+              else
+                io << "Throwing away " + response
+              end  
+            
+              io << "response:\n " + response
+            end
+              
+            # Done, increment the count and return the response
             increment_message_count
-            # forward the response back to the client
-            response = @helper.read_message(@socket)
             client.print(@helper.prepend_length(response)) 
           end
           client.close
@@ -169,10 +187,7 @@ module Ensime
     # the message in (:swank-rpc ..msg... count)
     def create_message(call, count)
       msg = "(:swank-rpc #{call} #{count})"
-      size = msg.length.to_s(16) # 16 bit 
-      header = size.to_s.length.upto(MESSAGE_HEADER_SIZE-1).collect{0}
-      header = header + size.split('')
-      return header.to_s + msg
+      return prepend_length(msg)
     end
 
     # Reads a message from the socket. The first 6 bits are the 
