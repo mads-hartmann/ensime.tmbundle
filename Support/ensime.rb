@@ -59,7 +59,7 @@ module Ensime
     
     def organize_imports(file)
       msg = @helper.prepend_length('(swank:perform-refactor '+@procedure_id.to_s+' organizeImports' +
-      			 ' (file "'+file+'" start 1 end 28))')
+      			 ' (file "'+file+'" start 1 end '+caret_position.to_s+'))')
       endMessage = @helper.prepend_length("EOF")
       @socket.print(msg)
       puts @helper.read_message(@socket)
@@ -72,9 +72,40 @@ module Ensime
        @socket.print(msg)
        puts @helper.read_message(@socket)
        @socket.print(endMessage)
+       # The following will force textmate to re-read the files from
+       # the hdd. Otherwise the user wouldn't see the changes
+       `osascript &>/dev/null \
+          -e 'tell app "SystemUIServer" to activate'; \
+        osascript &>/dev/null \
+          -e 'tell app "TextMate" to activate' &`
+    end
+    
+    def completions(file, word)
+      msg = @helper.prepend_length('(swank:scope-completion "'+file+'" '+caret_position.to_s+' "'+word+'" nil)')
+      endMessage = @helper.prepend_length("EOF")
+      @socket.print(msg)
+      puts @helper.read_message(@socket)
+      @socket.print(endMessage)
     end
     
     private
+    
+    # This method was a code snippet from Hans-Jörg Bibiko 
+    # provided on the textmate dev ML 
+    def caret_position
+      lines = STDIN.readlines 
+
+      # Find out the caret's position within the whole document as we may need to 
+      # more back and forwards across line boundaries while building up the 
+      # selector signature. 
+      line_index = ENV['TM_LINE_INDEX'].to_i 
+      line_number = ENV['TM_LINE_NUMBER'].to_i - 1 - 1  # starts from 1 and stop on line before 
+
+      # caret_placement identifies the index of the character to the left of the caret's position. 
+      caret_placement = (0..line_number).inject(0) {|sum, i| sum + lines[i].length} + line_index - 1 
+
+      return caret_placement
+    end
         
     # Connects to the Textmate ENSIME server backend
     # TODO: What if there's no port file?
@@ -125,11 +156,12 @@ module Ensime
         loop {  # Servers run forever                        
           client = server.accept
           while((msg = @helper.read_message(client)) != "EOF")
-            io << "<p>Forwarding message:\n#{msg}\n</p>"
             
             # create the right message structure and forward
-            @socket.print(@helper.create_message(msg, @message_count)) 
+            swank_message = @helper.create_message(msg, @message_count) 
+            @socket.print(swank_message) 
             
+            io << "<p>Forwarded message:\n#{swank_message}\n</p>"
 
             # Throw away messages till we find one with the correct
             # message number. 
@@ -143,7 +175,6 @@ module Ensime
               else
                 io << "Throwing away " + response
               end  
-            
               io << "response:\n " + response
             end
               
@@ -163,7 +194,6 @@ module Ensime
     def increment_message_count 
       @message_count = @message_count + 1 
     end
-    
             
     # Write the port this server is going to use to the file
     # TM_SERVER_PORT_FILE fíle.
