@@ -12,6 +12,8 @@ require ENV['TM_BUNDLE_SUPPORT'] + '/ensime.rb'
 Ensime::Client.new.type_check_file(ENV['TM_FILEPATH'])</string>
 	<key>input</key>
 	<string>selection</string>
+	<key>keyEquivalent</key>
+	<string>^V</string>
 	<key>name</key>
 	<string>Type-check file</string>
 	<key>output</key>

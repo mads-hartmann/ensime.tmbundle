@@ -25,6 +25,7 @@ module Ensime
     def initialize
       @socket = connect
       @helper = MessageHelper.new
+      @procedure_id = 1
     end
     
     def initialize_project
@@ -41,10 +42,11 @@ module Ensime
     end
     
     def type_check_file(file) 
-      puts "NOT IMPLEMENTED"
-      # msg = @helper.create_message("(:swank-rpc (swank:typecheck-file ,#{file}) 3)")      
-      # @socket.print(msg)
-      # puts @helper.read_message(@socket)
+      msg = @helper.prepend_length('(swank:typecheck-file "'+file+'")')
+      endMessage = @helper.prepend_length("EOF")
+      @socket.print(msg)
+      puts @helper.read_message(@socket)
+      @socket.print(endMessage)
     end
     
     def type_check_all
@@ -53,6 +55,23 @@ module Ensime
       @socket.print(msg)
       puts @helper.read_message(@socket)
       @socket.print(endMessage)
+    end
+    
+    def organize_imports(file)
+      msg = @helper.prepend_length('(swank:perform-refactor '+@procedure_id.to_s+' organizeImports' +
+      			 ' (file "'+file+'" start 1 end 28))')
+      endMessage = @helper.prepend_length("EOF")
+      @socket.print(msg)
+      puts @helper.read_message(@socket)
+      @socket.print(endMessage)
+    end
+    
+    def format_file(file)      
+       msg = @helper.prepend_length('(swank:format-source ("'+file+'"))')
+       endMessage = @helper.prepend_length("EOF")
+       @socket.print(msg)
+       puts @helper.read_message(@socket)
+       @socket.print(endMessage)
     end
     
     private

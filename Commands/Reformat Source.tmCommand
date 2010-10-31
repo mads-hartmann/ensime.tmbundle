@@ -9,18 +9,18 @@
 
 require ENV['TM_BUNDLE_SUPPORT'] + '/ensime.rb'
 
-Ensime::Client.new.type_check_all</string>
+Ensime::Client.new.format_file(ENV['TM_FILEPATH'])</string>
 	<key>input</key>
 	<string>selection</string>
 	<key>keyEquivalent</key>
-	<string>^V</string>
+	<string>^H</string>
 	<key>name</key>
-	<string>Type-check project</string>
+	<string>Reformat Source</string>
 	<key>output</key>
 	<string>showAsTooltip</string>
 	<key>scope</key>
 	<string>source.scala</string>
 	<key>uuid</key>
-	<string>9E750420-554B-46C4-B0BE-7737A1954F13</string>
+	<string>51FCA685-3CC2-48B2-809E-E98B77670736</string>
 </dict>
 </plist>
