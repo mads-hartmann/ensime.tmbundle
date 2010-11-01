@@ -9,16 +9,18 @@
 
 require ENV['TM_BUNDLE_SUPPORT'] + '/ensime.rb'
 
-Ensime::Server.new.start</string>
+Ensime::Client.new.initialize_project</string>
 	<key>input</key>
-	<string>none</string>
+	<string>selection</string>
+	<key>keyEquivalent</key>
+	<string>^@e</string>
 	<key>name</key>
-	<string>Start TM Server</string>
+	<string>Initialize ENSIME</string>
 	<key>output</key>
-	<string>showAsHTML</string>
+	<string>showAsTooltip</string>
 	<key>scope</key>
 	<string>source.scala</string>
 	<key>uuid</key>
-	<string>23394602-62B5-46A1-BC33-B1C46C5A40F2</string>
+	<string>2CAFDDFD-DE9B-4B2E-84CE-6BFDB7B3680E</string>
 </dict>
 </plist>

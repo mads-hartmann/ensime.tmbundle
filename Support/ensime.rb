@@ -141,52 +141,41 @@ module Ensime
     end
     
     # Start the server. 
-    def start
-      
-      TextMate::HTMLOutput.show(
-        :title => "Textmate ENSIME Server", 
-        :sub_title => "Logs", 
-        :html_head => Helper.new.script_style_header) do |io|
-        
-        
-        io << "<pre></code>"
+    def start(io)
+      port = pick_port
+      server = TCPServer.open(port)   
+      loop {  # Servers run forever                        
+        client = server.accept
+        while((msg = @helper.read_message(client)) != "EOF")
+          
+          # create the right message structure and forward
+          swank_message = @helper.create_message(msg, @message_count) 
+          @socket.print(swank_message) 
+          
+          io << "<p class='tm_message'>Forwarded message:\n#{swank_message}\n</p>"
 
-        port = pick_port
-        server = TCPServer.open(port)   
-        loop {  # Servers run forever                        
-          client = server.accept
-          while((msg = @helper.read_message(client)) != "EOF")
-            
-            # create the right message structure and forward
-            swank_message = @helper.create_message(msg, @message_count) 
-            @socket.print(swank_message) 
-            
-            io << "<p>Forwarded message:\n#{swank_message}\n</p>"
-
-            # Throw away messages till we find one with the correct
-            # message number. 
-            correct_message = false
-            response = ""
-            while(!correct_message) 
-              response = @helper.read_message(@socket)
-              msgNr = response.slice(response.length-2,1).to_i
-              if msgNr == @message_count
-                correct_message = true
-              else
-                io << "Throwing away " + response
-              end  
-              io << "response:\n " + response
-            end
-              
-            # Done, increment the count and return the response
-            increment_message_count
-            client.print(@helper.prepend_length(response)) 
+          # Throw away messages till we find one with the correct
+          # message number. 
+          correct_message = false
+          response = ""
+          while(!correct_message) 
+            response = @helper.read_message(@socket)
+            msgNr = response.slice(response.length-2,1).to_i
+            if msgNr == @message_count
+              correct_message = true
+            else
+              io << "<p class='tm_message'>Throwing away:\n"+response+"</p>"
+            end  
+            io << "<p class='tm_message'>response:\n"+response+"</p>"
           end
-          client.close
-        }
-        
-        io << "</code></pre>"
-      end  
+            
+          # Done, increment the count and return the response
+          increment_message_count
+          client.print(@helper.prepend_length(response)) 
+        end
+        client.close
+      }
+
     end
             
     private 

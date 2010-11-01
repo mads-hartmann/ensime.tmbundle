@@ -6,12 +6,9 @@
 	<dict>
 		<key>items</key>
 		<array>
-			<string>62E9487B-357C-44FD-908E-D707018A9C77</string>
-			<string>23394602-62B5-46A1-BC33-B1C46C5A40F2</string>
-			<string>2CAFDDFD-DE9B-4B2E-84CE-6BFDB7B3680E</string>
 			<string>A46B5E7C-25AF-4C64-B50B-C6A5C772530D</string>
-			<string>1EC51EA9-09DE-4F3C-A2EC-D508FDED45CE</string>
-			<string>9E750420-554B-46C4-B0BE-7737A1954F13</string>
+			<string>A07F77FF-4B7D-4F0C-A92A-3A9FC7A23BF7</string>
+			<string>B850BA22-DC96-4CAD-B19C-501D63E39920</string>
 			<string>54455BAD-46AE-4FD8-84B5-70667324A608</string>
 		</array>
 		<key>submenus</key>
@@ -26,6 +23,26 @@
 				<key>name</key>
 				<string>Refactorings</string>
 			</dict>
+			<key>A07F77FF-4B7D-4F0C-A92A-3A9FC7A23BF7</key>
+			<dict>
+				<key>items</key>
+				<array>
+					<string>62E9487B-357C-44FD-908E-D707018A9C77</string>
+					<string>2CAFDDFD-DE9B-4B2E-84CE-6BFDB7B3680E</string>
+				</array>
+				<key>name</key>
+				<string>Start</string>
+			</dict>
+			<key>B850BA22-DC96-4CAD-B19C-501D63E39920</key>
+			<dict>
+				<key>items</key>
+				<array>
+					<string>1EC51EA9-09DE-4F3C-A2EC-D508FDED45CE</string>
+					<string>9E750420-554B-46C4-B0BE-7737A1954F13</string>
+				</array>
+				<key>name</key>
+				<string>Validate</string>
+			</dict>
 		</dict>
 	</dict>
 	<key>name</key>
@@ -33,7 +50,6 @@
 	<key>ordering</key>
 	<array>
 		<string>62E9487B-357C-44FD-908E-D707018A9C77</string>
-		<string>23394602-62B5-46A1-BC33-B1C46C5A40F2</string>
 		<string>2CAFDDFD-DE9B-4B2E-84CE-6BFDB7B3680E</string>
 		<string>A46B5E7C-25AF-4C64-B50B-C6A5C772530D</string>
 		<string>51FCA685-3CC2-48B2-809E-E98B77670736</string>
