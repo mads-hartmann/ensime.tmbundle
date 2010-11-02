@@ -194,7 +194,8 @@ module Ensime
           response = ""
           while(!correct_message) 
             response = @helper.read_message(@socket)
-            msgNr = response.slice(response.length-2,1).to_i
+            countLength = @message_count.to_s.length
+            msgNr = response.slice(response.length - (countLength + 1),countLength).to_i
             if msgNr == @message_count
               correct_message = true
             else
