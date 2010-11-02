@@ -9,7 +9,7 @@
 
 require ENV['TM_BUNDLE_SUPPORT'] + '/ensime.rb'
 
-Ensime::Client.new.completions(ENV['TM_FILEPATH'], ENV['TM_CURRENT_WORD'])</string>
+Ensime::Client.new.completions(ENV['TM_FILEPATH'], ENV['TM_CURRENT_WORD'], ENV['TM_CURRENT_LINE'])</string>
 	<key>input</key>
 	<string>document</string>
 	<key>keyEquivalent</key>

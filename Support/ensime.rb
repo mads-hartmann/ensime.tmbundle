@@ -9,10 +9,6 @@ require SUPPORT_LIB + 'tm/htmloutput'
 require SUPPORT_LIB + 'tm/process'
 require BUNDLE_LIB + "sexpistol/sexpistol_parser.rb"
 require BUNDLE_LIB + "sexpistol/sexpistol.rb"
-# require SUPPORT_LIB + 'tm/require_cmd'
-# require SUPPORT_LIB + 'escape'
-# require SUPPORT_LIB + 'exit_codes'
-
 
 module Ensime
   
@@ -108,9 +104,26 @@ module Ensime
         end
     end
     
-    def completions(file, word)
+    def completions(file, word, line)
       if !@socket.nil?
-        msg = @helper.prepend_length('(swank:scope-completion "'+file+'" '+caret_position.to_s+' "'+word+'" nil)')
+        
+        typeOfCompletion = begin
+          if line.include?('.')
+            "type-completion" 
+          else
+            "scope-completion" 
+          end
+        end
+        
+        partialCompletion = begin
+          if word.chars.to_a.last == '.'
+            ""
+          else
+            word
+          end
+        end
+        
+        msg = @helper.prepend_length('(swank:'+typeOfCompletion+' "'+file+'" '+caret_position.to_s+' "'+partialCompletion+'" nil)')        
         endMessage = @helper.prepend_length("EOF")
         @socket.print(msg)
         swankmsg = @helper.read_message(@socket)
@@ -119,7 +132,6 @@ module Ensime
         compls = parsed[0][1][1].collect do |compl|
           {'display' => compl[1] }
         end
-        #{:initial_filter => ""}
         TextMate::UI.complete(compls)
       end
     end
