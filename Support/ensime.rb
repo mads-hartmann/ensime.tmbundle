@@ -35,7 +35,7 @@ module Ensime
       @helper = MessageHelper.new
       @procedure_id = 1
       @parser = Sexpistol.new
-      @parser.ruby_keyword_literals = false      
+      @parser.ruby_keyword_literals = false
     end
     
     def initialize_project
@@ -107,37 +107,65 @@ module Ensime
     
     def completions(file, word, line)
       if !@socket.nil?
-        
-        typeOfCompletion = begin
-          if line.include?('.')
-            "type-completion" 
-          else
-            "scope-completion" 
-          end
+        if line.include?('.')
+          complete_type(file,word,line)
+        else
+          complete_scope(file,word,line)
         end
-        
-        partialCompletion = begin
-          if word.chars.to_a.last == '.'
-            ""
-          else
-            word
-          end
-        end
-        
-        msg = @helper.prepend_length('(swank:'+typeOfCompletion+' "'+file+'" '+caret_position.to_s+' "'+partialCompletion+'" nil)')        
-        endMessage = @helper.prepend_length("EOF")
-        @socket.print(msg)
-        swankmsg = @helper.read_message(@socket)
-        @socket.print(endMessage)
-        parsed = @parser.parse_string(swankmsg)
-        compls = parsed[0][1][1].collect do |compl|
-          {'display' => compl[1] }
-        end
-        TextMate::UI.complete(compls)
       end
     end
-    
+        
     private
+    
+    def complete_scope(file,word,line)
+      msg = @helper.prepend_length('(swank:scope-completion "'+file+'" '+caret_position.to_s+' "'+word+'" nil)')        
+      endMessage = @helper.prepend_length("EOF")
+      @socket.print(msg)
+      swankmsg = @helper.read_message(@socket)
+      @socket.print(endMessage)
+      parsed = @parser.parse_string(swankmsg)
+      compls = parsed[0][1][1].collect do |compl|
+        img = begin
+          if compl[3].chars.to_a.last == '$' 
+            "Object"
+          else
+            "Class"
+          end
+        end
+        {'image' => img, 'display' => compl[1]}
+      end
+      TextMate::UI.complete(compls)
+    end
+    
+    def complete_type(file,word,line)      
+      partialCompletion = begin
+        if word.chars.to_a.last == '.'
+          ""
+        else
+          word
+        end
+      end 
+      msg = @helper.prepend_length('(swank:type-completion "'+file+'" '+caret_position.to_s+' "'+partialCompletion+'" nil)')        
+      endMessage = @helper.prepend_length("EOF")
+      @socket.print(msg)
+      swankmsg = @helper.read_message(@socket)
+      @socket.print(endMessage)
+      parsed = @parser.parse_string(swankmsg)
+      # pp parsed
+      compls = parsed[0][1][1].collect do |compl|
+        t = compl[3].split("=>").first.strip
+        t2 = t.slice(1,t.length-2).to_s
+        stopPoint = 0
+        args = t2.split(',').collect do |arg|
+          stopPoint = stopPoint +1
+          "${"+stopPoint.to_s+":"+arg.to_s+"}"
+        end
+        {'image' => "Function", 
+         'display' => compl[1],
+         'insert' => "("+args.to_s+")"}
+      end
+      TextMate::UI.complete(compls)
+    end
     
     def print_type_errors(parsed)
       if parsed[0][1][1][3] == []
@@ -203,6 +231,17 @@ module Ensime
       @socket = connect
       @helper = MessageHelper.new
       @message_count = 1
+      # The following registerers the images you can display in the
+      # completions
+      imgpath = ENV['TM_BUNDLE_SUPPORT']+'/images'
+			images = {
+					"Function"   => "#{imgpath}/function.png",
+					"Package" => "#{imgpath}/package.png",
+					"Class" => "#{imgpath}/class.png",
+					"Trait"   => "#{imgpath}/trait.png",
+					"Object"    => "#{imgpath}/object.png",
+			}
+			`"$DIALOG" images --register  '#{images.to_plist}'`
     end
     
     # Start the server. 
