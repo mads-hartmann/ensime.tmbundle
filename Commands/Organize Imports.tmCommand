@@ -17,7 +17,7 @@ Ensime::Client.new.organize_imports(ENV['TM_FILEPATH'])</string>
 	<key>name</key>
 	<string>Organize Imports</string>
 	<key>output</key>
-	<string>showAsTooltip</string>
+	<string>replaceDocument</string>
 	<key>scope</key>
 	<string>source.scala</string>
 	<key>uuid</key>

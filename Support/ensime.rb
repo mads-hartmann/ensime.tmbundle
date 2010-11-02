@@ -5,6 +5,7 @@ require "socket"
 require 'pp' # pretty printing
 require SUPPORT_LIB + 'io'
 require SUPPORT_LIB + 'ui'
+require SUPPORT_LIB + 'textmate'
 require SUPPORT_LIB + 'tm/htmloutput'
 require SUPPORT_LIB + 'tm/process'
 require BUNDLE_LIB + "sexpistol/sexpistol_parser.rb"
@@ -82,8 +83,11 @@ module Ensime
         			 ' (file "'+file+'" start 1 end '+caret_position.to_s+'))')
         endMessage = @helper.prepend_length("EOF")
         @socket.print(msg)
-        puts @helper.read_message(@socket)
+        swankmsg = @helper.read_message(@socket)
         @socket.print(endMessage)
+        parsed = @parser.parse_string(swankmsg)
+        print parsed[0][1][1][7][0][3]
+        # puts parsed[0][1][1][5]
       end
     end
     
@@ -97,10 +101,7 @@ module Ensime
         puts "Done reformatting source."
         # The following will force textmate to re-read the files from
         # the hdd. Otherwise the user wouldn't see the changes
-        `osascript &>/dev/null \
-          -e 'tell app "SystemUIServer" to activate'; \
-         osascript &>/dev/null \
-          -e 'tell app "TextMate" to activate' &`
+        TextMate::rescan_project()
         end
     end
     
