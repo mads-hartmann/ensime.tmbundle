@@ -28,82 +28,100 @@ module Ensime
   class Client
     
     def initialize
-      @socket = connect
+      begin
+        @socket = connect
+      rescue 
+        @socket = nil
+        puts "Please start the ensime backend first."
+      end
+      
       @helper = MessageHelper.new
       @procedure_id = 1
       @parser = Sexpistol.new
-      @parser.ruby_keyword_literals = false
+      @parser.ruby_keyword_literals = false      
     end
     
     def initialize_project
-      infoMsg = @helper.prepend_length("(swank:connection-info)")
-      projectMsg = @helper.prepend_length("(swank:init-project #{read_project_file})")
-      endMessage = @helper.prepend_length("EOF")
+      if !@socket.nil?
+        infoMsg = @helper.prepend_length("(swank:connection-info)")
+        projectMsg = @helper.prepend_length("(swank:init-project #{read_project_file})")
+        endMessage = @helper.prepend_length("EOF")
 
-      @socket.print(infoMsg)
-      @parser.parse_string(@helper.read_message(@socket))
-      @socket.print(projectMsg)
-      @parser.parse_string(@helper.read_message(@socket))
-      @socket.print(endMessage)
-      puts "ENSIME initialized. May the _ be with you."
-      # TODO: what to do with the answer?
+        @socket.print(infoMsg)
+        @parser.parse_string(@helper.read_message(@socket))
+        @socket.print(projectMsg)
+        @parser.parse_string(@helper.read_message(@socket))
+        @socket.print(endMessage)
+        puts "ENSIME initialized. May the _ be with you."      
+      end
     end
     
     def type_check_file(file) 
-      msg = @helper.prepend_length('(swank:typecheck-file "'+file+'")')
-      endMessage = @helper.prepend_length("EOF")
-      @socket.print(msg)
-      swankmsg = @helper.read_message(@socket)
-      @socket.print(endMessage)
-      parsed = @parser.parse_string(swankmsg)
-      print_type_errors(parsed)
+      if !@socket.nil?
+        msg = @helper.prepend_length('(swank:typecheck-file "'+file+'")')
+        endMessage = @helper.prepend_length("EOF")
+        @socket.print(msg)
+        swankmsg = @helper.read_message(@socket)
+        @socket.print(endMessage)
+        parsed = @parser.parse_string(swankmsg)
+        print_type_errors(parsed)
+      end
     end
     
     def type_check_all
-      msg = @helper.prepend_length("(swank:typecheck-all)")      
-      endMessage = @helper.prepend_length("EOF")
-      @socket.print(msg)
-      swankmsg = @helper.read_message(@socket)
-      @socket.print(endMessage)
-      parsed = @parser.parse_string(swankmsg)
-      print_type_errors(parsed)
+      if !@socket.nil?
+        msg = @helper.prepend_length("(swank:typecheck-all)")      
+        endMessage = @helper.prepend_length("EOF")
+        @socket.print(msg)
+        swankmsg = @helper.read_message(@socket)
+        @socket.print(endMessage)
+        parsed = @parser.parse_string(swankmsg)
+        print_type_errors(parsed)
+      end
     end
     
     def organize_imports(file)
-      msg = @helper.prepend_length('(swank:perform-refactor '+@procedure_id.to_s+' organizeImports' +
-      			 ' (file "'+file+'" start 1 end '+caret_position.to_s+'))')
-      endMessage = @helper.prepend_length("EOF")
-      @socket.print(msg)
-      puts @helper.read_message(@socket)
-      @socket.print(endMessage)
+      if !@socket.nil?
+        msg = @helper.prepend_length('(swank:perform-refactor '+@procedure_id.to_s+' organizeImports' +
+        			 ' (file "'+file+'" start 1 end '+caret_position.to_s+'))')
+        endMessage = @helper.prepend_length("EOF")
+        @socket.print(msg)
+        puts @helper.read_message(@socket)
+        @socket.print(endMessage)
+      end
     end
     
     def format_file(file)      
-      msg = @helper.prepend_length('(swank:format-source ("'+file+'"))')
-      endMessage = @helper.prepend_length("EOF")
-      @socket.print(msg)
-      @helper.read_message(@socket) #throw it away
-      @socket.print(endMessage)
-      puts "Done reformatting source."
-      # The following will force textmate to re-read the files from
-      # the hdd. Otherwise the user wouldn't see the changes
-      `osascript &>/dev/null \
-        -e 'tell app "SystemUIServer" to activate'; \
-       osascript &>/dev/null \
-        -e 'tell app "TextMate" to activate' &`
+      if !@socket.nil?
+        msg = @helper.prepend_length('(swank:format-source ("'+file+'"))')
+        endMessage = @helper.prepend_length("EOF")
+        @socket.print(msg)
+        @helper.read_message(@socket) #throw it away
+        @socket.print(endMessage)
+        puts "Done reformatting source."
+        # The following will force textmate to re-read the files from
+        # the hdd. Otherwise the user wouldn't see the changes
+        `osascript &>/dev/null \
+          -e 'tell app "SystemUIServer" to activate'; \
+         osascript &>/dev/null \
+          -e 'tell app "TextMate" to activate' &`
+        end
     end
     
     def completions(file, word)
-      msg = @helper.prepend_length('(swank:scope-completion "'+file+'" '+caret_position.to_s+' "'+word+'" nil)')
-      endMessage = @helper.prepend_length("EOF")
-      @socket.print(msg)
-      swankmsg = @helper.read_message(@socket)
-      @socket.print(endMessage)
-      parsed = @parser.parse_string(swankmsg)
-      compls = parsed[0][1][1].collect do |compl|
-        {'display' => compl[1] }
+      if !@socket.nil?
+        msg = @helper.prepend_length('(swank:scope-completion "'+file+'" '+caret_position.to_s+' "'+word+'" nil)')
+        endMessage = @helper.prepend_length("EOF")
+        @socket.print(msg)
+        swankmsg = @helper.read_message(@socket)
+        @socket.print(endMessage)
+        parsed = @parser.parse_string(swankmsg)
+        compls = parsed[0][1][1].collect do |compl|
+          {'display' => compl[1] }
+        end
+        #{:initial_filter => ""}
+        TextMate::UI.complete(compls)
       end
-      TextMate::UI.complete(compls,{:initial_filter => ""})
     end
     
     private
