@@ -1,9 +1,14 @@
 SUPPORT_LIB = ENV['TM_SUPPORT_PATH'] + '/lib/'
+BUNDLE_LIB = ENV['TM_BUNDLE_SUPPORT'] + "/"
 
 require "socket"
+require 'pp' # pretty printing
 require SUPPORT_LIB + 'io'
+require SUPPORT_LIB + 'ui'
 require SUPPORT_LIB + 'tm/htmloutput'
 require SUPPORT_LIB + 'tm/process'
+require BUNDLE_LIB + "sexpistol/sexpistol_parser.rb"
+require BUNDLE_LIB + "sexpistol/sexpistol.rb"
 # require SUPPORT_LIB + 'tm/require_cmd'
 # require SUPPORT_LIB + 'escape'
 # require SUPPORT_LIB + 'exit_codes'
@@ -26,6 +31,8 @@ module Ensime
       @socket = connect
       @helper = MessageHelper.new
       @procedure_id = 1
+      @parser = Sexpistol.new
+      @parser.ruby_keyword_literals = false
     end
     
     def initialize_project
@@ -34,10 +41,11 @@ module Ensime
       endMessage = @helper.prepend_length("EOF")
 
       @socket.print(infoMsg)
-      puts @helper.read_message(@socket)
+      @parser.parse_string(@helper.read_message(@socket))
       @socket.print(projectMsg)
-      puts @helper.read_message(@socket)
+      @parser.parse_string(@helper.read_message(@socket))
       @socket.print(endMessage)
+      puts "ENSIME initialized. May the _ be with you."
       # TODO: what to do with the answer?
     end
     
@@ -45,16 +53,20 @@ module Ensime
       msg = @helper.prepend_length('(swank:typecheck-file "'+file+'")')
       endMessage = @helper.prepend_length("EOF")
       @socket.print(msg)
-      puts @helper.read_message(@socket)
+      swankmsg = @helper.read_message(@socket)
       @socket.print(endMessage)
+      parsed = @parser.parse_string(swankmsg)
+      print_type_errors(parsed)
     end
     
     def type_check_all
       msg = @helper.prepend_length("(swank:typecheck-all)")      
       endMessage = @helper.prepend_length("EOF")
       @socket.print(msg)
-      puts @helper.read_message(@socket)
+      swankmsg = @helper.read_message(@socket)
       @socket.print(endMessage)
+      parsed = @parser.parse_string(swankmsg)
+      print_type_errors(parsed)
     end
     
     def organize_imports(file)
@@ -67,28 +79,50 @@ module Ensime
     end
     
     def format_file(file)      
-       msg = @helper.prepend_length('(swank:format-source ("'+file+'"))')
-       endMessage = @helper.prepend_length("EOF")
-       @socket.print(msg)
-       puts @helper.read_message(@socket)
-       @socket.print(endMessage)
-       # The following will force textmate to re-read the files from
-       # the hdd. Otherwise the user wouldn't see the changes
-       `osascript &>/dev/null \
-          -e 'tell app "SystemUIServer" to activate'; \
-        osascript &>/dev/null \
-          -e 'tell app "TextMate" to activate' &`
+      msg = @helper.prepend_length('(swank:format-source ("'+file+'"))')
+      endMessage = @helper.prepend_length("EOF")
+      @socket.print(msg)
+      @helper.read_message(@socket) #throw it away
+      @socket.print(endMessage)
+      puts "Done reformatting source."
+      # The following will force textmate to re-read the files from
+      # the hdd. Otherwise the user wouldn't see the changes
+      `osascript &>/dev/null \
+        -e 'tell app "SystemUIServer" to activate'; \
+       osascript &>/dev/null \
+        -e 'tell app "TextMate" to activate' &`
     end
     
     def completions(file, word)
       msg = @helper.prepend_length('(swank:scope-completion "'+file+'" '+caret_position.to_s+' "'+word+'" nil)')
       endMessage = @helper.prepend_length("EOF")
       @socket.print(msg)
-      puts @helper.read_message(@socket)
+      swankmsg = @helper.read_message(@socket)
       @socket.print(endMessage)
+      parsed = @parser.parse_string(swankmsg)
+      compls = parsed[0][1][1].collect do |compl|
+        {'display' => compl[1] }
+      end
+      TextMate::UI.complete(compls,{:initial_filter => ""})
     end
     
     private
+    
+    def print_type_errors(parsed)
+      if parsed[0][1][1][3] == []
+        TextMate::UI.tool_tip("<span style='color:green; font-weight:bold;'>No errors</span>", 
+          {:format => :html, :transparent => false})
+      else #there were errors
+        errs = parsed[0][1][1][3].collect do |err|
+          rel_path = err[13].gsub(ENV['TM_PROJECT_DIRECTORY'],"").gsub("/src/main/scala","") 
+          "<span><span style='color:red; font-weight:bold;'>#{err[1]}: </span>" +
+          "#{err[3]} " +
+          "at line #{err[9]} " +
+          "in #{rel_path}</span><br />"
+        end
+        TextMate::UI.tool_tip(errs.to_s, {:format => :html, :transparent => false})
+      end
+    end
     
     # This method was a code snippet from Hans-Jörg Bibiko 
     # provided on the textmate dev ML 
