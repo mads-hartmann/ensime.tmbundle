@@ -1,6 +1,8 @@
 SUPPORT_LIB = ENV['TM_SUPPORT_PATH'] + '/lib/'
 BUNDLE_LIB = ENV['TM_BUNDLE_SUPPORT'] + "/"
 
+require 'strscan'
+require 'stringio'
 require "socket"
 require 'pp' # pretty printing
 require SUPPORT_LIB + 'io'
@@ -151,20 +153,52 @@ module Ensime
       swankmsg = @helper.read_message(@socket)
       @socket.print(endMessage)
       parsed = @parser.parse_string(swankmsg)
-      # pp parsed
-      compls = parsed[0][1][1].collect do |compl|
-        t = compl[3].split("=>").first.strip
-        t2 = t.slice(1,t.length-2).to_s
-        stopPoint = 0
-        args = t2.split(',').collect do |arg|
-          stopPoint = stopPoint +1
-          "${"+stopPoint.to_s+":"+arg.to_s+"}"
+      pp parsed
+      # compls = parsed[0][1][1].collect do |compl|
+      #         t = compl[3].split("=>").first.strip
+      #         t2 = t.slice(1,t.length-2).to_s
+      #         types = parse_type_string(t2)
+      #         stopPoint = 0
+      #         args = StringIO.new
+      #         types.each do |type|
+      #           stopPoint = stopPoint +1
+      #           if !stopPoint == 1
+      #             args << ", "
+      #           end
+      #           args << ("${"+stopPoint.to_s+":"+type.to_s+"}")
+      #         end
+      #         {'image' => "Function", 
+      #          'display' => compl[1],
+      #          'insert' => "("+args.string+")"}
+      #       end
+      #       TextMate::UI.complete(compls)
+    end
+    
+    # Takes a string representing a scala type and 
+    # returns an array with each type
+    # "Function[A,B],String, Bool" => [Function[A,B] , String, Bool]
+    def parse_type_string(typestring) 
+      type = /\(.*\)?|\w+(\[.*\])?/
+      tuple = /\(.*\)/
+      comma = /\s*,?\s*/
+      s = StringScanner.new(typestring)
+
+      arr = []
+      attemps = 0
+      while !s.eos?
+        str = StringIO.new
+        str << s.scan(tuple).to_s
+        str << s.scan(type).to_s
+        s.scan(comma)
+        arr.push(str.string)
+        attemps = attemps + 1
+        if attemps == 50 
+          # raise "Error parsing " + typestring
+          return [] 
         end
-        {'image' => "Function", 
-         'display' => compl[1],
-         'insert' => "("+args.to_s+")"}
       end
-      TextMate::UI.complete(compls)
+
+      return arr
     end
     
     def print_type_errors(parsed)
