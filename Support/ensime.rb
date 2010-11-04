@@ -10,7 +10,6 @@ require SUPPORT_LIB + 'ui'
 require SUPPORT_LIB + 'textmate'
 require SUPPORT_LIB + 'tm/htmloutput'
 require SUPPORT_LIB + 'tm/process'
-require BUNDLE_LIB + "server.rb"
 require BUNDLE_LIB + "scalaparser.rb"
 require BUNDLE_LIB + "sexpistol/sexpistol_parser.rb"
 require BUNDLE_LIB + "sexpistol/sexpistol.rb"
@@ -18,7 +17,7 @@ require BUNDLE_LIB + "sexpistol/sexpistol.rb"
 module Ensime
   
   MESSAGE_HEADER_SIZE = 6
-  TM_SERVER_PORT_FILE = ENV['TM_PROJECT_DIRECTORY'] + "/tm_port"
+  ENSIME_MESSAGE_COUNTER_FILE = ENV['TM_PROJECT_DIRECTORY'] + "/.ensime.msg.counter"
   ENSIME_PORT_FILE = ENV['TM_PROJECT_DIRECTORY'] + "/ensime_port"
     
   # This is the client. Create an instance of this class to 
@@ -36,25 +35,23 @@ module Ensime
         puts "Please start the ensime backend first."
       end
       
-      @helper = MessageHelper.new(MESSAGE_HEADER_SIZE)
       @procedure_id = 1
       @parser = Sexpistol.new
       @parser.ruby_keyword_literals = false
     end
     
     def initialize_project
+      set_message_counter(0)
       if !@socket.nil?
         project_config = read_project_file
         if !project_config.nil?
-          infoMsg = @helper.prepend_length("(swank:connection-info)")
-          projectMsg = @helper.prepend_length("(swank:init-project #{project_config})")
-          endMessage = @helper.prepend_length("EOF")
+          infoMsg = create_message("(swank:connection-info)")
+          projectMsg = create_message("(swank:init-project #{project_config})")
 
           @socket.print(infoMsg)
-          @parser.parse_string(@helper.read_message(@socket))
+          @parser.parse_string(get_response(@socket))
           @socket.print(projectMsg)
-          @parser.parse_string(@helper.read_message(@socket))
-          @socket.print(endMessage)
+          @parser.parse_string(get_response(@socket))
           puts "ENSIME is running. Please wait while it is analyzing your code"      
         else
           puts "Please create a .ensime project file and place it your\nprojects root directory"
@@ -64,11 +61,9 @@ module Ensime
     
     def type_check_file(file) 
       if !@socket.nil?
-        msg = @helper.prepend_length('(swank:typecheck-file "'+file+'")')
-        endMessage = @helper.prepend_length("EOF")
+        msg = create_message('(swank:typecheck-file "'+file+'")')
         @socket.print(msg)
-        swankmsg = @helper.read_message(@socket)
-        @socket.print(endMessage)
+        swankmsg = get_response(@socket)
         parsed = @parser.parse_string(swankmsg)
         print_type_errors(parsed)
       end
@@ -76,11 +71,9 @@ module Ensime
     
     def type_check_all
       if !@socket.nil?
-        msg = @helper.prepend_length("(swank:typecheck-all)")      
-        endMessage = @helper.prepend_length("EOF")
+        msg = create_message("(swank:typecheck-all)")
         @socket.print(msg)
-        swankmsg = @helper.read_message(@socket)
-        @socket.print(endMessage)
+        swankmsg = get_response(@socket)
         parsed = @parser.parse_string(swankmsg)
         print_type_errors(parsed)
       end
@@ -89,21 +82,19 @@ module Ensime
     def organize_imports(file)
       if !@socket.nil?
         # message to tell ensime we want to refactor import
-        msg = @helper.prepend_length('(swank:perform-refactor '+@procedure_id.to_s+' organizeImports' +
+        msg = create_message('(swank:perform-refactor '+@procedure_id.to_s+' organizeImports' +
         			 ' (file "'+file+'" start 1 end 10000))')
-        endMessage = @helper.prepend_length("EOF")
         @socket.print(msg)
-        swankmsg = @helper.read_message(@socket)
+        swankmsg = get_response(@socket)
         
         # message to tell ensime to apply the changes
         parsed = @parser.parse_string(swankmsg)
         precedId = parsed[0][1][1][1]
-        doItMessage = @helper.prepend_length("(swank:exec-refactor #{precedId} organizeImports)")
+        doItMessage = create_message("(swank:exec-refactor #{precedId} organizeImports)")
         
         @socket.print(doItMessage)
-        rslt = @helper.read_message(@socket)
+        rslt = get_response(@socket)
         rsltParsed = @parser.parse_string(rslt)
-        @socket.print(endMessage)
         # The following will force textmate to re-read the files from
         # the hdd. Otherwise the user wouldn't see the changes
         TextMate::rescan_project()
@@ -112,11 +103,9 @@ module Ensime
     
     def format_file(file)      
       if !@socket.nil?
-        msg = @helper.prepend_length('(swank:format-source ("'+file+'"))')
-        endMessage = @helper.prepend_length("EOF")
+        msg = create_message('(swank:format-source ("'+file+'"))')
         @socket.print(msg)
-        @helper.read_message(@socket) #throw it away
-        @socket.print(endMessage)
+        get_response(@socket) #throw it away
         # The following will force textmate to re-read the files from
         # the hdd. Otherwise the user wouldn't see the changes
         TextMate::rescan_project()
@@ -136,11 +125,9 @@ module Ensime
     private
     
     def complete_scope(file,word,line)
-      msg = @helper.prepend_length('(swank:scope-completion "'+file+'" '+caret_position.to_s+' "'+word+'" nil)')        
-      endMessage = @helper.prepend_length("EOF")
+      msg = create_message('(swank:scope-completion "'+file+'" '+caret_position.to_s+' "'+word+'" nil)')
       @socket.print(msg)
-      swankmsg = @helper.read_message(@socket)
-      @socket.print(endMessage)
+      swankmsg = get_response(@socket,read_message_counter())
       parsed = @parser.parse_string(swankmsg)
       compls = parsed[0][1][1].collect do |compl|
         img = begin
@@ -163,11 +150,9 @@ module Ensime
           word
         end
       end 
-      msg = @helper.prepend_length('(swank:type-completion "'+file+'" '+caret_position.to_s+' "'+partialCompletion+'" nil)')        
-      endMessage = @helper.prepend_length("EOF")
+      msg = create_message('(swank:type-completion "'+file+'" '+caret_position.to_s+' "'+partialCompletion+'" nil)')        
       @socket.print(msg)
-      swankmsg = @helper.read_message(@socket)
-      @socket.print(endMessage)
+      swankmsg = get_response(@socket)
       parsed = @parser.parse_string(swankmsg)
       # pp parsed
       if parsed[0][1][1] == []
@@ -213,6 +198,71 @@ module Ensime
       end
     end
     
+    def set_message_counter(count)
+      if File.exists?(ENSIME_MESSAGE_COUNTER_FILE)
+        File.delete(ENSIME_MESSAGE_COUNTER_FILE)
+      end
+      file = File.new(ENSIME_MESSAGE_COUNTER_FILE, "w")
+      file.print(count)
+      file.close
+    end
+    
+    def increment_message_counter 
+      cnt = read_message_counter()
+      newCnt = cnt+1
+      set_message_counter(newCnt)
+    end
+    
+    def read_message_counter
+      if File.exists?(ENSIME_MESSAGE_COUNTER_FILE)
+        contents = File.open(ENSIME_MESSAGE_COUNTER_FILE, "rb") { |f| f.read }
+        return contents.to_i
+      else
+        return nil
+      end
+    end
+    
+    def get_response(socket)
+      count = read_message_counter
+      correct_message = false
+      response = ""
+      while(!correct_message) 
+        response = read_message(socket)
+        countLength = count.to_s.length
+        msgNr = response.slice(response.length - (countLength + 1),countLength).to_i
+        if msgNr == count
+          correct_message = true
+        else
+        end
+      end
+      return response
+    end
+    
+    # This simply creates a message by prepending the length of the message
+    # this is needed to the reciever knows how many bits to read.
+    def prepend_length(msg)
+      size = msg.length.to_s(16) # 16 bit 
+      header = size.to_s.length.upto(MESSAGE_HEADER_SIZE-1).collect{0}
+      header = header + size.split('')
+      return header.to_s + msg
+    end
+  
+    # creates a message that the ensime backend can read. This is done
+    # by prepending the length of the message (hex-encoded). and wrapping
+    # the message in (:swank-rpc ..msg... count)
+    def create_message(call)
+      msg = "(:swank-rpc #{call} #{read_message_counter()})"
+      return prepend_length(msg)
+    end
+
+    # Reads a message from the socket. The first 6 bits are the 
+    # length of the message. 
+    def read_message(socket)
+      length = socket.read(6).to_i(16)
+      message = socket.read(length)
+      return message
+    end
+    
     # This method was a code snippet from Hans-Jörg Bibiko 
     # provided on the textmate dev ML 
     def caret_position
@@ -234,7 +284,7 @@ module Ensime
     # TODO: What if there's no port file?
     # TODO: What if the server isn't running?    
     def connect
-      file = File.new(TM_SERVER_PORT_FILE, "r")
+      file = File.new(ENSIME_PORT_FILE, "r")
       port = file.gets.to_i
       file.close
       return TCPSocket.open("127.0.0.1", port)      
