@@ -5,46 +5,26 @@
 	<key>beforeRunningCommand</key>
 	<string>nop</string>
 	<key>command</key>
-	<string>#!/usr/bin/env ruby -wKU
+	<string>export SHELL_NAME=${SHELL_NAME:="ENSIME Backend"}
+export CMD="cd "$ENSIME_HOME" &amp;&amp; ./bin/server.sh "$TM_PROJECT_DIRECTORY"/ensime_port"
 
-SUPPORT_LIB = ENV['TM_SUPPORT_PATH'] + '/lib/'
+"$TM_BUNDLE_SUPPORT/shell.sh"
 
-require SUPPORT_LIB + 'tm/process'
-require SUPPORT_LIB + 'tm/htmloutput'
-require ENV['TM_BUNDLE_SUPPORT'] + '/ensime.rb'
+export SHELL_NAME=${SHELL_NAME:="Client Server"}
+export CMD='ruby \"'$TM_BUNDLE_SUPPORT'/start_server.rb\" \"'$TM_BUNDLE_SUPPORT'\" \"'$TM_PROJECT_DIRECTORY'\" \"'$TM_SUPPORT_PATH'\"'
 
-ENSIME_HOME = "/Users/Mads/dev/tools/emacs_config/ensime_2.8.1.RC3-0.3.7"
-ENSIME_SH = "#{ENSIME_HOME}/bin/server.sh"
-TEMP_FILE = ENV['TM_PROJECT_DIRECTORY'] + "/ensime_port"
-
-
-TextMate::HTMLOutput.show(
-  :title =&gt; "Textmate ENSIME Server", 
-  :sub_title =&gt; "Logs", 
-  :html_head =&gt; Ensime::Helper.new.script_style_header) do |io|
-
-    Thread.new do
-      TextMate::Process.run(ENSIME_SH,TEMP_FILE) do |str|
-        io &lt;&lt; "&lt;p class='ensime_msg'&gt;#{str}&lt;/p&gt;"
-      end
-    end
-    
-    sleep(3) # give it time to start.
-    
-    Ensime::Server.new.start(io)
-
-end</string>
+"$TM_BUNDLE_SUPPORT/shell.sh"</string>
 	<key>input</key>
-	<string>selection</string>
+	<string>none</string>
 	<key>keyEquivalent</key>
 	<string>^@e</string>
 	<key>name</key>
 	<string>Start ENSIME</string>
 	<key>output</key>
-	<string>showAsHTML</string>
+	<string>discard</string>
 	<key>scope</key>
 	<string>source.scala</string>
 	<key>uuid</key>
-	<string>62E9487B-357C-44FD-908E-D707018A9C77</string>
+	<string>6D0CEBCE-33B6-494A-9D31-DD7C219D9F26</string>
 </dict>
 </plist>
