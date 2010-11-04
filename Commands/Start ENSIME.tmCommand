@@ -17,7 +17,7 @@ export CMD='ruby \"'$TM_BUNDLE_SUPPORT'/start_server.rb\" \"'$TM_BUNDLE_SUPPORT'
 	<key>input</key>
 	<string>none</string>
 	<key>keyEquivalent</key>
-	<string>^@e</string>
+	<string>^R</string>
 	<key>name</key>
 	<string>Start ENSIME</string>
 	<key>output</key>

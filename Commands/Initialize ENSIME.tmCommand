@@ -13,7 +13,7 @@ Ensime::Client.new.initialize_project</string>
 	<key>input</key>
 	<string>selection</string>
 	<key>keyEquivalent</key>
-	<string>^@e</string>
+	<string>^R</string>
 	<key>name</key>
 	<string>Initialize ENSIME</string>
 	<key>output</key>
