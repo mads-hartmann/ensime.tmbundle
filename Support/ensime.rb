@@ -170,26 +170,30 @@ module Ensime
       @socket.print(endMessage)
       parsed = @parser.parse_string(swankmsg)
       # pp parsed
-      compls = parsed[0][1][1].collect do |compl|
-        funcs = ScalaParser::parse_function_signature(compl[3]) # arry of args, one arr for each func
-        stopPoint = 0
-        args = StringIO.new
-        funcs.each do |funcArgs|
-          stopPoint = stopPoint +1
-          args << "("
-          if !funcArgs.nil?
-            funcArgs.each do |arg|
-              args << ("${"+stopPoint.to_s+":"+arg.to_s+"}")
-              stopPoint = stopPoint +1
+      if parsed[0][1][1] == []
+        puts "No completions."
+      else
+        compls = parsed[0][1][1].collect do |compl|
+          funcs = ScalaParser::parse_function_signature(compl[3]) # arry of args, one arr for each func
+          stopPoint = 0
+          args = StringIO.new
+          funcs.each do |funcArgs|
+            stopPoint = stopPoint +1
+            args << "("
+            if !funcArgs.nil?
+              funcArgs.each do |arg|
+                args << ("${"+stopPoint.to_s+":"+arg.to_s+"}")
+                stopPoint = stopPoint +1
+              end
             end
+            args << ")"
           end
-          args << ")"
+          {'image' => "Function", 
+           'display' => compl[1],
+           'insert' => args.string}
         end
-        {'image' => "Function", 
-         'display' => compl[1],
-         'insert' => args.string}
+        TextMate::UI.complete(compls)
       end
-      TextMate::UI.complete(compls)
     end
     
     def print_type_errors(parsed)
