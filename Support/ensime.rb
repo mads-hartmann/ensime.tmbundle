@@ -185,18 +185,19 @@ module Ensime
     end
     
     def print_type_errors(parsed)
-      if parsed[0][1][1][3] == []
-        TextMate::UI.tool_tip("<span style='color:green; font-weight:bold;'>No errors</span>", 
+      errors = parsed[0][1][1][3]
+      if errors == []
+        TextMate::UI.tool_tip("<span style='color:green; font-weight:bold; padding: 5px;'>W00t, no errors</span>", 
           {:format => :html, :transparent => false})
-      else #there were errors
-        errs = parsed[0][1][1][3].collect do |err|
-          rel_path = err[13].gsub(ENV['TM_PROJECT_DIRECTORY'],"").gsub("/src/main/scala","") 
-          "<span><span style='color:red; font-weight:bold;'>#{err[1]}: </span>" +
-          "#{err[3]} " +
-          "at line #{err[9]} " +
-          "in #{rel_path}</span><br />"
+      else 
+        msgs = errors.collect do |err|
+          file_name = err[13].split("/").last
+          "#{err[1]}: #{err[3]} at line #{err[9]} in #{file_name}"
         end
-        TextMate::UI.tool_tip(errs.to_s, {:format => :html, :transparent => false})
+        item = TextMate::UI.menu(msgs)
+        if !item.nil? #nil if user hits escape
+          `mate #{errors[item][13]} -l #{errors[item][9]}`
+        end
       end
     end
     

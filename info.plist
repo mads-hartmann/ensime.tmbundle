@@ -5,6 +5,7 @@
 	<key>deleted</key>
 	<array>
 		<string>62E9487B-357C-44FD-908E-D707018A9C77</string>
+		<string>1EC51EA9-09DE-4F3C-A2EC-D508FDED45CE</string>
 	</array>
 	<key>mainMenu</key>
 	<dict>
@@ -41,7 +42,6 @@
 			<dict>
 				<key>items</key>
 				<array>
-					<string>1EC51EA9-09DE-4F3C-A2EC-D508FDED45CE</string>
 					<string>9E750420-554B-46C4-B0BE-7737A1954F13</string>
 				</array>
 				<key>name</key>
@@ -58,7 +58,6 @@
 		<string>A46B5E7C-25AF-4C64-B50B-C6A5C772530D</string>
 		<string>51FCA685-3CC2-48B2-809E-E98B77670736</string>
 		<string>B3824F78-AA62-4591-A545-D3922FC8DC6D</string>
-		<string>1EC51EA9-09DE-4F3C-A2EC-D508FDED45CE</string>
 		<string>9E750420-554B-46C4-B0BE-7737A1954F13</string>
 	</array>
 	<key>uuid</key>
