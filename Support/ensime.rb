@@ -55,7 +55,7 @@ module Ensime
           @socket.print(projectMsg)
           @parser.parse_string(@helper.read_message(@socket))
           @socket.print(endMessage)
-          puts "ENSIME initialized. May the _ be with you."      
+          puts "ENSIME is running. Please wait while it is analyzing your code"      
         else
           puts "Please create a .ensime project file and place it your\nprojects root directory"
         end
@@ -89,12 +89,13 @@ module Ensime
     def organize_imports(file)
       if !@socket.nil?
         msg = @helper.prepend_length('(swank:perform-refactor '+@procedure_id.to_s+' organizeImports' +
-        			 ' (file "'+file+'" start 1 end '+caret_position.to_s+'))')
+        			 ' (file "'+file+'" start 1 end 1))')
         endMessage = @helper.prepend_length("EOF")
         @socket.print(msg)
         swankmsg = @helper.read_message(@socket)
         @socket.print(endMessage)
         parsed = @parser.parse_string(swankmsg)
+        #parsed[0][1][1][7][0][3]
         print parsed[0][1][1][7][0][3]
         # puts parsed[0][1][1][5]
       end

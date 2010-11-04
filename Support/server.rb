@@ -73,12 +73,11 @@ module Ensime
             response = @helper.read_message(@socket)
             countLength = @message_count.to_s.length
             msgNr = response.slice(response.length - (countLength + 1),countLength).to_i
+            puts response
             if msgNr == @message_count
               correct_message = true
             else
-              puts "Throwing away:\n"+response
             end  
-            puts "response:\n"+response
           end
           
           # Done, increment the count and return the response
@@ -156,8 +155,8 @@ module Ensime
     # Reads a message from the socket. The first 6 bits are the 
     # length of the message. 
     def read_message(socket)
-      length = socket.recv(6).to_i(16)
-      message = socket.recv(length)
+      length = socket.read(6).to_i(16)
+      message = socket.read(length)
       return message
     end
   
