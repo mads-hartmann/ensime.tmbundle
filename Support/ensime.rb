@@ -10,6 +10,7 @@ require SUPPORT_LIB + 'ui'
 require SUPPORT_LIB + 'textmate'
 require SUPPORT_LIB + 'tm/htmloutput'
 require SUPPORT_LIB + 'tm/process'
+require BUNDLE_LIB + "scalaparser.rb"
 require BUNDLE_LIB + "sexpistol/sexpistol_parser.rb"
 require BUNDLE_LIB + "sexpistol/sexpistol.rb"
 
@@ -42,16 +43,21 @@ module Ensime
     
     def initialize_project
       if !@socket.nil?
-        infoMsg = @helper.prepend_length("(swank:connection-info)")
-        projectMsg = @helper.prepend_length("(swank:init-project #{read_project_file})")
-        endMessage = @helper.prepend_length("EOF")
+        project_config = read_project_file
+        if !project_config.nil?
+          infoMsg = @helper.prepend_length("(swank:connection-info)")
+          projectMsg = @helper.prepend_length("(swank:init-project #{project_config})")
+          endMessage = @helper.prepend_length("EOF")
 
-        @socket.print(infoMsg)
-        @parser.parse_string(@helper.read_message(@socket))
-        @socket.print(projectMsg)
-        @parser.parse_string(@helper.read_message(@socket))
-        @socket.print(endMessage)
-        puts "ENSIME initialized. May the _ be with you."      
+          @socket.print(infoMsg)
+          @parser.parse_string(@helper.read_message(@socket))
+          @socket.print(projectMsg)
+          @parser.parse_string(@helper.read_message(@socket))
+          @socket.print(endMessage)
+          puts "ENSIME initialized. May the _ be with you."      
+        else
+          puts "Please create a .ensime project file and place it your\nprojects root directory"
+        end
       end
     end
     
@@ -153,52 +159,27 @@ module Ensime
       swankmsg = @helper.read_message(@socket)
       @socket.print(endMessage)
       parsed = @parser.parse_string(swankmsg)
-      pp parsed
-      # compls = parsed[0][1][1].collect do |compl|
-      #         t = compl[3].split("=>").first.strip
-      #         t2 = t.slice(1,t.length-2).to_s
-      #         types = parse_type_string(t2)
-      #         stopPoint = 0
-      #         args = StringIO.new
-      #         types.each do |type|
-      #           stopPoint = stopPoint +1
-      #           if !stopPoint == 1
-      #             args << ", "
-      #           end
-      #           args << ("${"+stopPoint.to_s+":"+type.to_s+"}")
-      #         end
-      #         {'image' => "Function", 
-      #          'display' => compl[1],
-      #          'insert' => "("+args.string+")"}
-      #       end
-      #       TextMate::UI.complete(compls)
-    end
-    
-    # Takes a string representing a scala type and 
-    # returns an array with each type
-    # "Function[A,B],String, Bool" => [Function[A,B] , String, Bool]
-    def parse_type_string(typestring) 
-      type = /\(.*\)?|\w+(\[.*\])?/
-      tuple = /\(.*\)/
-      comma = /\s*,?\s*/
-      s = StringScanner.new(typestring)
-
-      arr = []
-      attemps = 0
-      while !s.eos?
-        str = StringIO.new
-        str << s.scan(tuple).to_s
-        str << s.scan(type).to_s
-        s.scan(comma)
-        arr.push(str.string)
-        attemps = attemps + 1
-        if attemps == 50 
-          # raise "Error parsing " + typestring
-          return [] 
+      # pp parsed
+      compls = parsed[0][1][1].collect do |compl|
+        funcs = ScalaParser::parse_function_signature(compl[3]) # arry of args, one arr for each func
+        stopPoint = 0
+        args = StringIO.new
+        funcs.each do |funcArgs|
+          stopPoint = stopPoint +1
+          args << "("
+          if !funcArgs.nil?
+            funcArgs.each do |arg|
+              args << ("${"+stopPoint.to_s+":"+arg.to_s+"}")
+              stopPoint = stopPoint +1
+            end
+          end
+          args << ")"
         end
+        {'image' => "Function", 
+         'display' => compl[1],
+         'insert' => args.string}
       end
-
-      return arr
+      TextMate::UI.complete(compls)
     end
     
     def print_type_errors(parsed)
@@ -246,8 +227,13 @@ module Ensime
     
     # TODO: What if there's not project file
     def read_project_file
-      contents = File.open(ENV['TM_PROJECT_DIRECTORY'] + "/.ensime", "rb") { |f| f.read }
-      return contents
+      path = ENV['TM_PROJECT_DIRECTORY'] + "/.ensime"
+      if File.exists?(path)
+        contents = File.open(path, "rb") { |f| f.read }
+        return contents
+      else
+        return nil
+      end
     end
   end
   
