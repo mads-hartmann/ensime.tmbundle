@@ -88,16 +88,25 @@ module Ensime
     
     def organize_imports(file)
       if !@socket.nil?
+        # message to tell ensime we want to refactor import
         msg = @helper.prepend_length('(swank:perform-refactor '+@procedure_id.to_s+' organizeImports' +
-        			 ' (file "'+file+'" start 1 end 1))')
+        			 ' (file "'+file+'" start 1 end 10000))')
         endMessage = @helper.prepend_length("EOF")
         @socket.print(msg)
         swankmsg = @helper.read_message(@socket)
-        @socket.print(endMessage)
+        
+        # message to tell ensime to apply the changes
         parsed = @parser.parse_string(swankmsg)
-        #parsed[0][1][1][7][0][3]
-        print parsed[0][1][1][7][0][3]
-        # puts parsed[0][1][1][5]
+        precedId = parsed[0][1][1][1]
+        doItMessage = @helper.prepend_length("(swank:exec-refactor #{precedId} organizeImports)")
+        
+        @socket.print(doItMessage)
+        rslt = @helper.read_message(@socket)
+        rsltParsed = @parser.parse_string(rslt)
+        @socket.print(endMessage)
+        # The following will force textmate to re-read the files from
+        # the hdd. Otherwise the user wouldn't see the changes
+        TextMate::rescan_project()
       end
     end
     
@@ -108,7 +117,6 @@ module Ensime
         @socket.print(msg)
         @helper.read_message(@socket) #throw it away
         @socket.print(endMessage)
-        puts "Done reformatting source."
         # The following will force textmate to re-read the files from
         # the hdd. Otherwise the user wouldn't see the changes
         TextMate::rescan_project()
