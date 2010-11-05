@@ -83,7 +83,7 @@ module Ensime
       if !@socket.nil?
         # message to tell ensime we want to refactor import
         msg = create_message('(swank:perform-refactor '+@procedure_id.to_s+' organizeImports' +
-        			 ' (file "'+file+'" start 1 end 10000))')
+        			 ' (file "'+file+'"))')
         @socket.print(msg)
         swankmsg = get_response(@socket)
         
