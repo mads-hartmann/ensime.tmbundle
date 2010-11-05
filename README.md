@@ -3,6 +3,8 @@ ENSIME TextMate Bundle
 
 **NOTICE**: This is still very much under development.
 
+See a preview video [here](http://www.youtube.com/watch?v=P5fcceWKxkU "here")
+
 Using it
 --------
 
