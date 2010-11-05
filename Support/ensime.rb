@@ -127,7 +127,7 @@ module Ensime
     def complete_scope(file,word,line)
       msg = create_message('(swank:scope-completion "'+file+'" '+caret_position.to_s+' "'+word+'" nil)')
       @socket.print(msg)
-      swankmsg = get_response(@socket,read_message_counter())
+      swankmsg = get_response(@socket)
       parsed = @parser.parse_string(swankmsg)
       compls = parsed[0][1][1].collect do |compl|
         img = begin
