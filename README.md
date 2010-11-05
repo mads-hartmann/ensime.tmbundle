@@ -3,8 +3,6 @@ ENSIME TextMate Bundle
 
 **NOTICE**: This is still very much under development.
 
-<object width="480" height="385"><param name="movie" value="http://www.youtube.com/v/P5fcceWKxkU?fs=1&amp;hl=en_US"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/P5fcceWKxkU?fs=1&amp;hl=en_US" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="480" height="385"></embed></object>
-
 Using it
 --------
 
