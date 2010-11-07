@@ -47,7 +47,6 @@ module Ensime
         if !project_config.nil?
           infoMsg = create_message("(swank:connection-info)")
           projectMsg = create_message("(swank:init-project #{project_config})")
-
           @socket.print(infoMsg)
           @parser.parse_string(get_response(@socket))
           @socket.print(projectMsg)
@@ -294,8 +293,15 @@ module Ensime
     def read_project_file
       path = ENV['TM_PROJECT_DIRECTORY'] + "/.ensime"
       if File.exists?(path)
-        contents = File.open(path, "rb") { |f| f.read }
-        return contents
+        config = StringIO.new
+        file = File.open(path, "rb") 
+        line = ""
+        while (line = file.gets)
+          if not line.strip.chars.first == ";"
+            config << line
+          end
+        end
+        return config.string
       else
         return nil
       end

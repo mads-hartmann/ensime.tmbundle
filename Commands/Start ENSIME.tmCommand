@@ -25,7 +25,7 @@ TextMate::HTMLOutput.show(
 
   stdin, stdout, stderr = Open3.popen3("#{ENSIME_SH} #{TEMP_FILE}")
   line = ""
-  while(line = stdout.readline)
+  while(line = stdout.gets)
     io &lt;&lt; "&lt;p&gt;#{line}&lt;/p&gt;"
   end
 end
