@@ -15,7 +15,7 @@ Ensime::Client.new.format_file(ENV['TM_FILEPATH'])</string>
 	<key>keyEquivalent</key>
 	<string>^H</string>
 	<key>name</key>
-	<string>Reformat Source</string>
+	<string>Reformat Document</string>
 	<key>output</key>
 	<string>showAsTooltip</string>
 	<key>scope</key>

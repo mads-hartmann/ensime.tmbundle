@@ -111,6 +111,44 @@ module Ensime
         end
     end
     
+    def rename(file)
+      selected = ENV['TM_SELECTED_TEXT']
+      file = ENV['TM_FILEPATH']
+      if !selected.nil?        
+        newName = TextMate::UI.request_string({
+          :title => "Rename '#{selected}'",
+          :prompt => "Enter the new name for '#{selected}'"})
+        if !newName.nil?
+          startCount = chars_up_to_line + ENV['TM_LINE_INDEX'].to_i + 1
+          endCount = startCount + selected.length          
+          msg = create_message('(swank:perform-refactor 1 rename ' + 
+                               '(file "'+file+'" '+
+                               'start '+startCount.to_s+' '+
+                               'end '+endCount.to_s+' '+
+                               'newName "'+newName+'"))')
+          @socket.print(msg)
+          swankmsg = get_response(@socket)
+          
+          # message to tell ensime to apply the changes
+          parsed = @parser.parse_string(swankmsg)
+          precedId = parsed[0][1][1][1]
+          doItMessage = create_message("(swank:exec-refactor #{precedId} rename)")
+
+          @socket.print(doItMessage)
+          rslt = get_response(@socket)
+          rsltParsed = @parser.parse_string(rslt)
+          # The following will force textmate to re-read the files from
+          # the hdd. Otherwise the user wouldn't see the changes
+          TextMate::rescan_project()
+          
+        else
+          puts "Aborted refactoring"
+        end
+      else
+        puts "Please select something to rename."
+      end
+    end
+    
     def completions(file, word, line)
       if !@socket.nil?
         if line.include?('.')
@@ -262,20 +300,24 @@ module Ensime
       return message
     end
     
-    # This method was a code snippet from Hans-Jörg Bibiko 
+    # finds the number of chars in all of the lines before the 
+    # current one.
+    def chars_up_to_line
+      lines = File.open(ENV['TM_FILEPATH'],"r").readlines
+      line_number = ENV['TM_LINE_NUMBER'].to_i - 1 - 1  # starts from 1 and stop on line before
+      count = (0..line_number).inject(0) {|sum, i| sum + lines[i].length}
+      return count
+    end
+    
+    # finds the number of chars up to the carets current posisiton.
+    #
+    # INFO: This method was a code snippet from Hans-Jörg Bibiko 
     # provided on the textmate dev ML 
-    def caret_position
-      lines = STDIN.readlines 
-
-      # Find out the caret's position within the whole document as we may need to 
-      # more back and forwards across line boundaries while building up the 
-      # selector signature. 
+    def caret_position      
       line_index = ENV['TM_LINE_INDEX'].to_i 
-      line_number = ENV['TM_LINE_NUMBER'].to_i - 1 - 1  # starts from 1 and stop on line before 
-
-      # caret_placement identifies the index of the character to the left of the caret's position. 
-      caret_placement = (0..line_number).inject(0) {|sum, i| sum + lines[i].length} + line_index - 1 
-
+      # caret_placement identifies the index of the character 
+      # to the left of the caret's position. 
+      caret_placement = chars_up_to_line + line_index - 1 
       return caret_placement
     end
         
