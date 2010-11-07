@@ -15,6 +15,7 @@ Now open a file file in that project and hit ⌃⇧R and chose "Start ENSIME". T
 - **Refactoring**
   - Organize imports (⌃⇧H): This will organize your imports and remove any unused imports
   - Reformat Document (⌃⇧H): This will reformat the current document
+  - Rename (⌃⇧H): This will rename the selected text.
 - **Other**
   - Type check project(⌃⇧V): This will type check your project. If there are any errors it will display a drop-down list with the errors. If you pick one of the items it will jump to that line in the file with the error.
   - Code completion (alt+esc): This will do code-completion or either types or methods depending on when you call it.
