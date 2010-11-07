@@ -111,6 +111,16 @@ module Ensime
         end
     end
     
+    def inspect
+      if !@socket.nil?
+        point = caret_position
+        msg = create_message('(swank:type-at-point "'+ENV['TM_FILEPATH']+'" '+point.to_s+')')
+        @socket.print(msg)
+        response = @parser.parse_string(get_response(@socket)) #throw it away
+        puts response[0][1][1][1]
+      end
+    end
+    
     def rename(file)
       selected = ENV['TM_SELECTED_TEXT']
       file = ENV['TM_FILEPATH']

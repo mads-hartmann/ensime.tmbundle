@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>beforeRunningCommand</key>
+	<string>nop</string>
+	<key>command</key>
+	<string>#!/usr/bin/env ruby -wKU
+
+require ENV['TM_BUNDLE_SUPPORT'] + '/ensime.rb'
+
+Ensime::Client.new.inspect()</string>
+	<key>input</key>
+	<string>selection</string>
+	<key>keyEquivalent</key>
+	<string>^I</string>
+	<key>name</key>
+	<string>Inspect</string>
+	<key>output</key>
+	<string>showAsTooltip</string>
+	<key>scope</key>
+	<string>source.scala</string>
+	<key>uuid</key>
+	<string>FB1CE70C-D821-4AB5-8F13-A3F87A722F79</string>
+</dict>
+</plist>

@@ -17,6 +17,7 @@ Now open a file file in that project and hit ⌃⇧R and chose "Start ENSIME". T
   - Reformat Document (⌃⇧H): This will reformat the current document
   - Rename (⌃⇧H): This will rename the selected text.
 - **Other**
+  - Inspect (⌃⇧i): This will show a tooltip with the type of the expression under the cursor. 
   - Type check project(⌃⇧V): This will type check your project. If there are any errors it will display a drop-down list with the errors. If you pick one of the items it will jump to that line in the file with the error.
   - Code completion (alt+esc): This will do code-completion or either types or methods depending on when you call it.
 
