@@ -7,29 +7,31 @@
 	<key>command</key>
 	<string>#!/usr/bin/env ruby -wKU
 
-SUPPORT_LIB = ENV['TM_SUPPORT_PATH'] + '/lib/'
+support = ENV['TM_SUPPORT_PATH'] + '/lib/'
 
 require "open3"
-require SUPPORT_LIB + 'tm/process'
-require SUPPORT_LIB + 'tm/htmloutput'
+require support + 'tm/process'
+require support + 'tm/htmloutput'
 require ENV['TM_BUNDLE_SUPPORT'] + '/ensime.rb'
 
-ENSIME_HOME = ENV['ENSIME_HOME']
-ENSIME_SH = "cd #{ENSIME_HOME} &amp;&amp; ./bin/server.sh"
-TEMP_FILE = ENV['TM_PROJECT_DIRECTORY'] + "/ensime_port"
+if ENV['ENSIME_HOME'].nil?
+	puts "&lt;h2&gt;Please set the ENSIME_HOME shell variable.&lt;/h2&gt;"
+else
+	ENSIME_HOME = ENV['ENSIME_HOME']
+	ENSIME_SH = "cd '#{ENSIME_HOME}' &amp;&amp; ./bin/server.sh"
+	TEMP_FILE = ENV['TM_PROJECT_DIRECTORY'] + "/ensime_port"
 
+	TextMate::HTMLOutput.show(
+	  :title =&gt; "Textmate ENSIME Server", 
+	  :sub_title =&gt; "Logs") do |io|
 
-TextMate::HTMLOutput.show(
-  :title =&gt; "Textmate ENSIME Server", 
-  :sub_title =&gt; "Logs") do |io|
-
-  stdin, stdout, stderr = Open3.popen3("#{ENSIME_SH} #{TEMP_FILE}")
-  line = ""
-  while(line = stdout.gets)
-    io &lt;&lt; "&lt;p&gt;#{line}&lt;/p&gt;"
-  end
-end
-</string>
+	  stdin, stdout, stderr = Open3.popen3("#{ENSIME_SH} '#{TEMP_FILE}'")
+	  line = ""
+	  while(line = stdout.gets)
+	    io &lt;&lt; "&lt;p&gt;#{line}&lt;/p&gt;"
+	  end
+	end
+end</string>
 	<key>input</key>
 	<string>none</string>
 	<key>keyEquivalent</key>
