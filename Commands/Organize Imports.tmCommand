@@ -11,13 +11,13 @@ require ENV['TM_BUNDLE_SUPPORT'] + '/ensime.rb'
 
 Ensime::Client.new.organize_imports(ENV['TM_FILEPATH'])</string>
 	<key>input</key>
-	<string>selection</string>
+	<string>document</string>
 	<key>keyEquivalent</key>
 	<string>^H</string>
 	<key>name</key>
 	<string>Organize Imports</string>
 	<key>output</key>
-	<string>showAsTooltip</string>
+	<string>replaceDocument</string>
 	<key>scope</key>
 	<string>source.scala</string>
 	<key>uuid</key>

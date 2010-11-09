@@ -11,7 +11,7 @@ require ENV['TM_BUNDLE_SUPPORT'] + '/ensime.rb'
 
 Ensime::Client.new.type_check_all</string>
 	<key>input</key>
-	<string>selection</string>
+	<string>document</string>
 	<key>keyEquivalent</key>
 	<string>^V</string>
 	<key>name</key>

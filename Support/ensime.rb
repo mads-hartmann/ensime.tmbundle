@@ -8,8 +8,10 @@ require 'pp' # pretty printing
 require SUPPORT_LIB + 'io'
 require SUPPORT_LIB + 'ui'
 require SUPPORT_LIB + 'textmate'
+require SUPPORT_LIB + 'tm/tempfile'
 require SUPPORT_LIB + 'tm/htmloutput'
 require SUPPORT_LIB + 'tm/process'
+require SUPPORT_LIB + 'tm/save_current_document.rb'
 require BUNDLE_LIB + "scalaparser.rb"
 require BUNDLE_LIB + "sexpistol/sexpistol_parser.rb"
 require BUNDLE_LIB + "sexpistol/sexpistol.rb"
@@ -57,19 +59,10 @@ module Ensime
         end
       end
     end
-    
-    def type_check_file(file) 
-      if !@socket.nil?
-        msg = create_message('(swank:typecheck-file "'+file+'")')
-        @socket.print(msg)
-        swankmsg = get_response(@socket)
-        parsed = @parser.parse_string(swankmsg)
-        print_type_errors(parsed)
-      end
-    end
-    
+        
     def type_check_all
       if !@socket.nil?
+        TextMate.save_current_document()
         msg = create_message("(swank:typecheck-all)")
         @socket.print(msg)
         swankmsg = get_response(@socket)
@@ -78,11 +71,16 @@ module Ensime
       end
     end
     
+    # The cleans up the import statements in the current file. 
+    # 
+    # It will save the current buffer to the HDD. Send a request to ENSIME to 
+    # organize the imports on the file on disk. Then it reads the file on disk and replaces 
+    # the content of the buffer with the contents of the file on disk
     def organize_imports(file)
       if !@socket.nil?
-        # message to tell ensime we want to refactor import
-        msg = create_message('(swank:perform-refactor '+@procedure_id.to_s+' organizeImports' +
-        			 ' (file "'+file+'"))')
+        TextMate.save_current_document()
+        msg = create_message('(swank:perform-refactor '+@procedure_id.to_s+' organizeImports ' +
+                             '(file "'+file+'"))')
         @socket.print(msg)
         swankmsg = get_response(@socket)
         
@@ -94,25 +92,32 @@ module Ensime
         @socket.print(doItMessage)
         rslt = get_response(@socket)
         rsltParsed = @parser.parse_string(rslt)
-        # The following will force textmate to re-read the files from
-        # the hdd. Otherwise the user wouldn't see the changes
-        TextMate::rescan_project()
+        contents = File.open(file, "rb") { |f| f.read }
+        puts contents
+        TextMate::UI.tool_tip("Done organizing")
       end
     end
     
+    # This formats the current file nicely
+    # 
+    # It will save the current buffer to the HDD. Send a request to ENSIME to 
+    # reformat the file on disk. Then it reads the file on disk and replaces 
+    # the content of the buffer with the contents of the file on disk
     def format_file(file)      
       if !@socket.nil?
+        TextMate.save_current_document()
         msg = create_message('(swank:format-source ("'+file+'"))')
         @socket.print(msg)
         get_response(@socket) #throw it away
-        # The following will force textmate to re-read the files from
-        # the hdd. Otherwise the user wouldn't see the changes
-        TextMate::rescan_project()
-        end
+        contents = File.open(file, "rb") { |f| f.read }
+        puts contents
+        TextMate::UI.tool_tip("Done formatting")
+      end
     end
     
     def inspect
       if !@socket.nil?
+        TextMate.save_current_document()
         point = caret_position
         msg = create_message('(swank:type-at-point "'+ENV['TM_FILEPATH']+'" '+point.to_s+')')
         @socket.print(msg)
@@ -121,10 +126,16 @@ module Ensime
       end
     end
     
+    # This does a rename refactoring 
+    # 
+    # It will save the current buffer to the HDD. Send a request to ENSIME to 
+    # do a rename refactor on the the file on disk. Then it reads the file on 
+    # disk and replaces the content of the buffer with the contents of the file on disk
     def rename(file)
       selected = ENV['TM_SELECTED_TEXT']
       file = ENV['TM_FILEPATH']
       if !selected.nil?        
+        TextMate.save_current_document()
         newName = TextMate::UI.request_string({
           :title => "Rename '#{selected}'",
           :prompt => "Enter the new name for '#{selected}'"})
@@ -147,20 +158,20 @@ module Ensime
           @socket.print(doItMessage)
           rslt = get_response(@socket)
           rsltParsed = @parser.parse_string(rslt)
-          # The following will force textmate to re-read the files from
-          # the hdd. Otherwise the user wouldn't see the changes
-          TextMate::rescan_project()
-          
+          TextMate::UI.tool_tip("Done formatting")
         else
-          puts "Aborted refactoring"
+          TextMate::UI.tool_tip("Aborted refactoring")
         end
       else
-        puts "Please select something to rename."
+        TextMate::UI.tool_tip("Please select something to rename.")
       end
+      contents = File.open(file, "rb") { |f| f.read }
+      puts contents
     end
     
     def completions(file, word, line)
       if !@socket.nil?
+        TextMate.save_current_document()
         if line.include?('.')
           complete_type(file,word,line)
         else
@@ -313,7 +324,13 @@ module Ensime
     # finds the number of chars in all of the lines before the 
     # current one.
     def chars_up_to_line
-      lines = File.open(ENV['TM_FILEPATH'],"r").readlines
+      lines = STDIN.readlines 
+      if lines.length < ENV['TM_LINE_NUMBER'].to_i
+        # The person has selected some text, so STDIN is 
+        # just the word and not the document
+        lines = File.open(ENV['TM_FILEPATH'],"r").readlines
+      end
+
       line_number = ENV['TM_LINE_NUMBER'].to_i - 1 - 1  # starts from 1 and stop on line before
       count = (0..line_number).inject(0) {|sum, i| sum + lines[i].length}
       return count
