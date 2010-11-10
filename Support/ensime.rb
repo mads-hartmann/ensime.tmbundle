@@ -172,7 +172,9 @@ module Ensime
     def completions(file, word, line)
       if !@socket.nil?
         TextMate.save_current_document()
-        if line.include?('.')
+        if line.include?("import")
+          complete_import(file,word,line)
+        elsif line.include?('.')
           complete_type(file,word,line)
         else
           complete_scope(file,word,line)
@@ -181,6 +183,27 @@ module Ensime
     end
         
     private
+    
+    def complete_import(file,word,line)
+       #msg = create_message('(swank:import-suggestions "'+file+'" '+caret_position.to_s+' ())')
+       msg = create_message('(swank:package-member-completion "'+file+'" "n")')
+       
+       @socket.print(msg)
+       swankmsg = get_response(@socket)
+       parsed = @parser.parse_string(swankmsg)
+       pp parsed
+       # compls = parsed[0][1][1].collect do |compl|
+       #          img = begin
+       #            if compl[3].chars.to_a.last == '$' 
+       #              "Object"
+       #            else
+       #              "Class"
+       #            end
+       #          end
+       #          {'image' => img, 'display' => compl[1]}
+       #        end
+       #        TextMate::UI.complete(compls)
+    end
     
     def complete_scope(file,word,line)
       msg = create_message('(swank:scope-completion "'+file+'" '+caret_position.to_s+' "'+word+'" nil)')
@@ -208,6 +231,7 @@ module Ensime
           word
         end
       end 
+      #puts caret_position.to_s
       msg = create_message('(swank:type-completion "'+file+'" '+caret_position.to_s+' "'+partialCompletion+'" nil)')        
       @socket.print(msg)
       swankmsg = get_response(@socket)
@@ -225,7 +249,7 @@ module Ensime
             args << "("
             if !funcArgs.nil?
               funcArgs.each do |arg|
-                args << ("${"+stopPoint.to_s+":"+arg.to_s+"}")
+                args << ("${"+stopPoint.to_s+":"+ScalaParser::Expander.new(stopPoint).expand(arg.to_s)+"}")
                 stopPoint = stopPoint +1
               end
             end
@@ -342,6 +366,7 @@ module Ensime
     # provided on the textmate dev ML 
     def caret_position      
       line_index = ENV['TM_LINE_INDEX'].to_i 
+
       # caret_placement identifies the index of the character 
       # to the left of the caret's position. 
       caret_placement = chars_up_to_line + line_index - 1 

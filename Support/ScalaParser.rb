@@ -2,6 +2,37 @@ require 'strscan'
 require 'stringio'
 
 module ScalaParser
+  
+  class Expander
+    
+    def initialize(cPoint)
+      @point = cPoint+1
+    end
+    
+    def expand(strToExpand)
+      funcRegexp = /Function(\d)\[(.*)\]/
+      scanner = StringScanner.new(strToExpand)
+      grps = strToExpand.match(funcRegexp)
+      if not grps.nil?
+        size = grps.captures[0].to_i
+        typstr = grps.captures[1].split(", ")
+        str = StringIO.new
+        (size).times do |cnt|
+          tabstop = cnt+@point
+          str << "${#{tabstop.to_s}:#{typstr[cnt]}}"
+          if cnt+1 < size
+            str << ", "
+          end
+        end
+        str << " => ${#{@point + size}:}"
+        return str.string
+      else
+        return strToExpand
+      end
+    end
+    
+  end
+  
   class << self
     
     def parse_function_signature(typestring) 
@@ -47,6 +78,22 @@ end
 # interactive unit tests
 if $0 == __FILE__
 require "test/unit"
+  
+  class TestExpander < Test::Unit::TestCase
+    
+    def test_expansion1
+      expected = "${1:A} => ${2:}"
+      result = ScalaParser::Expander.new(0).expand("Function1[A,B]")
+      assert_equal(expected,result)
+    end
+    
+    def test_expansion2
+      expected = "${3:A} => ${4:}"
+      result = ScalaParser::Expander.new(2).expand("Function1[A,B]")
+      assert_equal(expected,result)
+    end
+    
+  end
   
   class TestParser < Test::Unit::TestCase
     
