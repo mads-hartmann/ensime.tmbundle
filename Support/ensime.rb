@@ -62,18 +62,6 @@ module Ensime
       end
     end
 
-    def type_check_file
-      if !@socket.nil?
-        file = ENV['TM_FILEPATH']
-        TextMate.save_current_document()
-        msg = create_message('(swank:typecheck-file "'+file+'")')
-        @socket.print(msg)
-        swankmsg = get_response(@socket)
-        parsed = @parser.parse_string(swankmsg)
-        print_type_errors(parsed)
-      end
-    end
-        
     def type_check_all
       if !@socket.nil?
         TextMate.save_current_document()
