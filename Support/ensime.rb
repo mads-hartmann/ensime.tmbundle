@@ -35,7 +35,7 @@ module Ensime
       rescue 
         @socket = nil
         if print_error_message
-          puts "Please start the ensime backend first." 
+          TextMate::UI.tool_tip("Please start the ensime backend first." )
         end
       end
       
@@ -106,10 +106,10 @@ module Ensime
         @socket.print(doItMessage)
         rslt = get_response(@socket)
         rsltParsed = @parser.parse_string(rslt)
-        contents = File.open(file, "rb") { |f| f.read }
-        puts contents
         TextMate::UI.tool_tip("Done organizing")
       end
+      contents = File.open(file, "rb") { |f| f.read }
+      puts contents
     end
     
     # This formats the current file nicely
@@ -123,10 +123,10 @@ module Ensime
         msg = create_message('(swank:format-source ("'+file+'"))')
         @socket.print(msg)
         get_response(@socket) #throw it away
-        contents = File.open(file, "rb") { |f| f.read }
-        puts contents
         TextMate::UI.tool_tip("Done formatting")
       end
+      contents = File.open(file, "rb") { |f| f.read }
+      puts contents
     end
     
     def inspect
@@ -146,38 +146,40 @@ module Ensime
     # do a rename refactor on the the file on disk. Then it reads the file on 
     # disk and replaces the content of the buffer with the contents of the file on disk
     def rename(file)
-      selected = ENV['TM_SELECTED_TEXT']
-      file = ENV['TM_FILEPATH']
-      if !selected.nil?        
-        TextMate.save_current_document()
-        newName = TextMate::UI.request_string({
-          :title => "Rename '#{selected}'",
-          :prompt => "Enter the new name for '#{selected}'"})
-        if !newName.nil?
-          startCount = chars_up_to_line + ENV['TM_LINE_INDEX'].to_i + 1
-          endCount = startCount + selected.length          
-          msg = create_message('(swank:perform-refactor 1 rename ' + 
-                               '(file "'+file+'" '+
-                               'start '+startCount.to_s+' '+
-                               'end '+endCount.to_s+' '+
-                               'newName "'+newName+'"))')
-          @socket.print(msg)
-          swankmsg = get_response(@socket)
+      if !@socket.nil?
+        selected = ENV['TM_SELECTED_TEXT']
+        file = ENV['TM_FILEPATH']
+        if !selected.nil?        
+          TextMate.save_current_document()
+          newName = TextMate::UI.request_string({
+            :title => "Rename '#{selected}'",
+            :prompt => "Enter the new name for '#{selected}'"})
+          if !newName.nil?
+            startCount = chars_up_to_line + ENV['TM_LINE_INDEX'].to_i + 1
+            endCount = startCount + selected.length          
+            msg = create_message('(swank:perform-refactor 1 rename ' + 
+                                 '(file "'+file+'" '+
+                                 'start '+startCount.to_s+' '+
+                                 'end '+endCount.to_s+' '+
+                                 'newName "'+newName+'"))')
+            @socket.print(msg)
+            swankmsg = get_response(@socket)
           
-          # message to tell ensime to apply the changes
-          parsed = @parser.parse_string(swankmsg)
-          precedId = parsed[0][1][1][1]
-          doItMessage = create_message("(swank:exec-refactor #{precedId} rename)")
+            # message to tell ensime to apply the changes
+            parsed = @parser.parse_string(swankmsg)
+            precedId = parsed[0][1][1][1]
+            doItMessage = create_message("(swank:exec-refactor #{precedId} rename)")
 
-          @socket.print(doItMessage)
-          rslt = get_response(@socket)
-          rsltParsed = @parser.parse_string(rslt)
-          TextMate::UI.tool_tip("Done formatting")
+            @socket.print(doItMessage)
+            rslt = get_response(@socket)
+            rsltParsed = @parser.parse_string(rslt)
+            TextMate::UI.tool_tip("Done renaming")
+          else
+            TextMate::UI.tool_tip("Aborted refactoring")
+          end
         else
-          TextMate::UI.tool_tip("Aborted refactoring")
+          TextMate::UI.tool_tip("Please select something to rename.")
         end
-      else
-        TextMate::UI.tool_tip("Please select something to rename.")
       end
       contents = File.open(file, "rb") { |f| f.read }
       puts contents
@@ -280,7 +282,7 @@ module Ensime
     def print_type_errors(parsed)
       errors = parsed[0][1][1][3]
       if errors == []
-        TextMate::UI.tool_tip("<span style='color:green; font-weight:bold; padding: 5px;'>W00t, no errors</span>", 
+        TextMate::UI.tool_tip("<span style='color:green; font-weight:bold; padding: 5px;'>No errors</span>", 
           {:format => :html, :transparent => false})
       else 
         msgs = errors.collect do |err|
