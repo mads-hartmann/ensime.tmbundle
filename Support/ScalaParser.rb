@@ -1,5 +1,6 @@
 require 'strscan'
 require 'stringio'
+require 'ostruct'
 
 module ScalaParser
   
@@ -9,7 +10,17 @@ module ScalaParser
       @point = cPoint+1
     end
     
+    # This will try to expand a type to something more meaningful
+    # the current only use case for this is Functionx[a,b,...] and
+    # it will expand to a lambda with proper tab-stops
+    #
+    # It returns an OpenStruct with 
+    #   struct.string : the tab-stop-formatted string
+    #   struct.point  : this is the next usable tab-stop
     def expand(strToExpand)
+      
+      struct = OpenStruct.new
+      
       funcRegexp = /Function(\d)\[(.*)\]/
       scanner = StringScanner.new(strToExpand)
       grps = strToExpand.match(funcRegexp)
@@ -17,6 +28,7 @@ module ScalaParser
         size = grps.captures[0].to_i
         typstr = grps.captures[1].split(", ")
         str = StringIO.new
+        str << "("
         (size).times do |cnt|
           tabstop = cnt+@point
           str << "${#{tabstop.to_s}:#{typstr[cnt]}}"
@@ -24,10 +36,15 @@ module ScalaParser
             str << ", "
           end
         end
+        str << ")"
         str << " => ${#{@point + size}:}"
-        return str.string
+        struct.string = str.string
+        struct.point = @point + size + 1 
+        return struct
       else
-        return strToExpand
+        struct.string = strToExpand
+        struct.point = @point
+        return struct
       end
     end
     
@@ -82,15 +99,15 @@ require "test/unit"
   class TestExpander < Test::Unit::TestCase
     
     def test_expansion1
-      expected = "${1:A} => ${2:}"
-      result = ScalaParser::Expander.new(0).expand("Function1[A,B]")
-      assert_equal(expected,result)
+      expected = "(${1:A}) => ${2:}"
+      result = ScalaParser::Expander.new(0).expand("Function1[A, B]")
+      assert_equal(expected,result.string)
     end
     
     def test_expansion2
-      expected = "${3:A} => ${4:}"
-      result = ScalaParser::Expander.new(2).expand("Function1[A,B]")
-      assert_equal(expected,result)
+      expected = "(${3:A}) => ${4:}"
+      result = ScalaParser::Expander.new(2).expand("Function1[A, B]")
+      assert_equal(expected,result.string)
     end
     
   end

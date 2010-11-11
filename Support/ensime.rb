@@ -253,8 +253,9 @@ module Ensime
             args << "("
             if !funcArgs.nil?
               funcArgs.each do |arg|
-                args << ("${"+stopPoint.to_s+":"+ScalaParser::Expander.new(stopPoint).expand(arg.to_s)+"}")
-                stopPoint = stopPoint +1
+                expanded = ScalaParser::Expander.new(stopPoint).expand(arg.to_s)
+                args << ("${"+stopPoint.to_s+":"+expanded.string+"}")
+                stopPoint = expanded.point
               end
             end
             args << ")"
