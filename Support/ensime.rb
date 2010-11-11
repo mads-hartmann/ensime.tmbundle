@@ -29,12 +29,14 @@ module Ensime
   # transparrent to the user
   class Client
     
-    def initialize
+    def initialize(print_error_message = true)
       begin
         @socket = connect
       rescue 
         @socket = nil
-        puts "Please start the ensime backend first."
+        if print_error_message
+          puts "Please start the ensime backend first." 
+        end
       end
       
       @procedure_id = 1
@@ -57,6 +59,18 @@ module Ensime
         else
           puts "Please create a .ensime project file and place it your\nprojects root directory"
         end
+      end
+    end
+
+    def type_check_file
+      if !@socket.nil?
+        file = ENV['TM_FILEPATH']
+        TextMate.save_current_document()
+        msg = create_message('(swank:typecheck-file "'+file+'")')
+        @socket.print(msg)
+        swankmsg = get_response(@socket)
+        parsed = @parser.parse_string(swankmsg)
+        print_type_errors(parsed)
       end
     end
         
