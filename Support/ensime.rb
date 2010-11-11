@@ -407,4 +407,20 @@ module Ensime
     end
   end
   
+  class LittleHelper
+    
+    def register_images_for_completion
+      imgpath = ENV['TM_BUNDLE_SUPPORT']+'/images'
+      images = {
+        "Function"   => "#{imgpath}/function.png",
+        "Package" => "#{imgpath}/package.png",
+        "Class" => "#{imgpath}/class.png",
+        "Trait"   => "#{imgpath}/trait.png",
+        "Object"    => "#{imgpath}/object.png",
+      }
+     	`"$DIALOG" images --register  '#{images.to_plist}'`
+    end
+    
+  end
+  
 end

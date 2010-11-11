@@ -21,6 +21,8 @@ else
 	ENSIME_SH = "cd '#{ENSIME_HOME}' &amp;&amp; ./bin/server.sh"
 	TEMP_FILE = ENV['TM_PROJECT_DIRECTORY'] + "/ensime_port"
 
+     Ensime::LittleHelper.new.register_images_for_completion
+
 	TextMate::HTMLOutput.show(
 	  :title =&gt; "Textmate ENSIME Server", 
 	  :sub_title =&gt; "Logs") do |io|
