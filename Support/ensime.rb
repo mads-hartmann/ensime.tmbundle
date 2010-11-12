@@ -176,12 +176,31 @@ module Ensime
     def completions(file, word, line)
       if !@socket.nil?
         TextMate.save_current_document()
+        index = ENV['TM_LINE_INDEX']
+        point =  index.to_i 
+        chars = line.chars.to_a.slice(0,index.to_i) ## removing anything beyond the caret
+        white_space_count = chars.take_while { |ch| ch.match(/\s/) != nil }.length
+        charsStripped = chars.to_s.chars.to_a.slice(white_space_count-1,index.to_i) #striping whitespace
+
+        prev_char_index = point-1
+        prev_char = chars[prev_char_index]
+        
+        wd = charsStripped.reverse.take_while { |b| b.match(/\w/) != nil }.reverse.to_s
+        if wd.length > 0
+          prev_char_index = point-wd.length-1
+          prev_char = chars[prev_char_index]
+        end
+                
         if line.include?("import")
-          complete_import(file,word,line)
-        elsif line.include?('.')
-          complete_type(file,word,line)
+          # complete_import(file,word,line)
+          puts "not yet implemented"
+        elsif (prev_char_index > white_space_count) && 
+           (prev_char == '.' || prev_char == ' ')
+          # puts "complete type"
+          complete_type(file,wd,line)
         else
-          complete_scope(file,word,line)
+          # puts "scope"
+          complete_scope(file,wd,line)
         end
       end
     end
@@ -216,7 +235,10 @@ module Ensime
       parsed = @parser.parse_string(swankmsg)
       compls = parsed[0][1][1].collect do |compl|
         img = begin
-          if compl[3].chars.to_a.last == '$' 
+          fst = compl[1].chars.first.to_s
+          if fst.match(/\w/) != nil && fst.capitalize != fst
+            "Variable"
+          elsif compl[3].chars.to_a.last == '$' 
             "Object"
           else
             "Class"
@@ -412,6 +434,7 @@ module Ensime
     def register_images_for_completion
       imgpath = ENV['TM_BUNDLE_SUPPORT']+'/images'
       images = {
+        "Variable"   => "#{imgpath}/variable.png",
         "Function"   => "#{imgpath}/function.png",
         "Package" => "#{imgpath}/package.png",
         "Class" => "#{imgpath}/class.png",
