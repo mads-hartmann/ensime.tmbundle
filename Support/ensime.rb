@@ -193,7 +193,7 @@ module Ensime
                 
         if line.include?("import")
           # complete_import(file,word,line)
-          puts "not yet implemented"
+          puts "Sorry, import completion isn't implemented yet"
         elsif (prev_char_index > white_space_count) && 
            (prev_char == '.' || prev_char == ' ')
           # puts "complete type"
@@ -258,7 +258,8 @@ module Ensime
         end
       end 
       #puts caret_position.to_s
-      msg = create_message('(swank:type-completion "'+file+'" '+caret_position.to_s+' "'+partialCompletion+'" nil)')        
+      point = caret_position - word.length
+      msg = create_message('(swank:type-completion "'+file+'" '+point.to_s+' "'+partialCompletion+'")')        
       @socket.print(msg)
       swankmsg = get_response(@socket)
       parsed = @parser.parse_string(swankmsg)
@@ -267,26 +268,42 @@ module Ensime
         puts "No completions."
       else
         compls = parsed[0][1][1].collect do |compl|
-          funcs = ScalaParser::parse_function_signature(compl[3]) # arry of args, one arr for each func
-          stopPoint = 0
-          args = StringIO.new
-          funcs.each do |funcArgs|
-            stopPoint = stopPoint +1
-            args << "("
-            if !funcArgs.nil?
-              funcArgs.each do |arg|
-                expanded = ScalaParser::Expander.new(stopPoint).expand(arg.to_s)
-                args << ("${"+stopPoint.to_s+":"+expanded.string+"}")
-                stopPoint = expanded.point
-              end
-            end
-            args << ")"
-          end
-          {'image' => "Function", 
-           'display' => compl[1],
-           'insert' => args.string}
+          id = compl[5].to_i
+          {'id' => id,
+           'image' => "Function", 
+           'display' => compl[1]}
         end
-        TextMate::UI.complete(compls)
+
+        TextMate::UI.complete(compls){ |choice| 
+          picked = choice['id'] 
+          msg = create_message('(swank:call-completion '+picked.to_s+')')        
+          @socket.print(msg)
+          swankmsg = get_response(@socket)
+          parsed = @parser.parse_string(swankmsg)
+          # e_sn parsed[0][1][1][3][.inspect
+          noImplicits = parsed[0][1][1][3].select do |arr|
+            arr[3] == nil #check if it is implicit
+          end
+          curries = noImplicits.collect do |arr|
+            [arr[1][0][1][1],
+             arr[1][0][1][9]]
+          end
+          # e_sn curries.inspect
+          stopPoint = 0
+          str = curries.collect do |arr|
+            stopPoint = stopPoint +1
+            if arr[1] == nil # no type params
+              "(${#{stopPoint.to_s}:#{arr[0]}})"
+            else
+              preExpand = arr[0] + "[" + arr[1].collect{ |typ| typ[1] }.join(", ") + "]"
+              expanded = ScalaParser::Expander.new(stopPoint).expand(preExpand)
+              rslt = "(${#{stopPoint.to_s}:" + expanded.string + "})"
+              stopPoint = expanded.point
+              rslt
+            end
+          end
+          str.to_s
+        }
       end
     end
     
