@@ -26,7 +26,7 @@ else
 	TextMate::HTMLOutput.show(
 	  :title =&gt; "Textmate ENSIME Server", 
 	  :sub_title =&gt; "Logs") do |io|
-
+	  puts "&lt;p&gt;Started the server using: #{ENSIME_SH} '#{TEMP_FILE}'&lt;hr /&gt;&lt;/p&gt;"
 	  stdin, stdout, stderr = Open3.popen3("#{ENSIME_SH} '#{TEMP_FILE}'")
 	  line = ""
 	  while(line = stdout.gets)
