@@ -8,6 +8,11 @@ Using it
 
 **NOTICE**: You need to have an .ensime project file in the root of your project. For more information about this file please read the [ENSIME manual](http://aemon.com/file_dump/ensime_manual.html#tth_sEc3 "ENSIME manual"): 
 
+Here's a sample .ensime file:
+<pre><code>(:project-package "com.sidewayscoding" 
+ :use-sbt t 
+ :root-dir "/Users/Mads/dev/projects/functional_dictionary/")</code></pre>
+
 Now open a file file in that project and hit ⌃⇧R and chose "Start ENSIME". This will start the ENSIME backend and the output will be written in a HTML output window. You can safely minimize this window now. Now initialize ENSIME by hitting ⌃⇧R and pick the command "Initialize ENSIME". This will send your project file to ENSIME and it will start analyzing your code. After a few seconds ENSIME is ready to help you out.
 
 - **Refactoring**
