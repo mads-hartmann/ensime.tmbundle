@@ -12,7 +12,7 @@ require SUPPORT_LIB + 'tm/tempfile'
 require SUPPORT_LIB + 'tm/htmloutput'
 require SUPPORT_LIB + 'tm/process'
 require SUPPORT_LIB + 'tm/save_current_document.rb'
-require BUNDLE_LIB + "scalaparser.rb"
+require BUNDLE_LIB + "ScalaParser.rb"
 require BUNDLE_LIB + "sexpistol/sexpistol_parser.rb"
 require BUNDLE_LIB + "sexpistol/sexpistol.rb"
 
