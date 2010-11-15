@@ -27,7 +27,7 @@ Installation
 
 To install the bundle simply run the following in your terminal:
 
-<pre><code>git clone git@github.com:mads379/ensime.tmbundle.git
+<pre><code>git clone https://github.com/mads379/ensime.tmbundle.git
 open ensime.tmbundle</code></pre>
 
 Add the shell variable ENSIME_HOME in TextMate -> Preferences... -> Advanced -> Shell Variables to the root of your ENSIME distribution.
