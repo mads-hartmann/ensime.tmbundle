@@ -123,8 +123,12 @@ module Ensime
         point = caret_position
         msg = create_message('(swank:type-at-point "'+ENV['TM_FILEPATH']+'" '+point.to_s+')')
         @socket.print(msg)
-        response = @parser.parse_string(get_response(@socket)) #throw it away
-        puts response[0][1][1][1]
+        response = @parser.parse_string(get_response(@socket))
+        if response[0][1][1] == :nil
+          puts "Can't resolve type"
+        else
+          puts response[0][1][1][1]
+        end
       end
     end
     
