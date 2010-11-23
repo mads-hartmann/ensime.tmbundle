@@ -6,7 +6,7 @@ See a preview video [here](http://www.youtube.com/watch?v=sIp-Xt3TvrI "here")
 Using it
 --------
 
-**NOTICE**: You need to have an .ensime project file in the root of your project. For more information about this file please read the [ENSIME manual](http://aemon.com/file_dump/ensime_manual.html#tth_sEc3 "ENSIME manual"): 
+**NOTICE**: You need to have an .ensime project file in the root of your project. For more information about this file please read the [ENSIME manual](http://aemon.com/file_dump/ensime_manual.html#tth_sEc3 "ENSIME manual") or modify the sample one below: 
 
 Here's a sample .ensime file:
 <pre><code>(:project-package "com.sidewayscoding" 
@@ -28,14 +28,14 @@ Now open a file file in that project and hit ⌃⇧R and chose "Start ENSIME". T
 Installation 
 ------------
 
-**NOTICE**: You need to have the latest version of ENSIME installed. Currently this is ensime_2.8.1.RC4-0.3.8.jar
+**NOTICE**: You need to have ENSIME installed. You can download it [here](https://github.com/downloads/aemoncannon/ensime/ensime_2.8.1-0.3.8.tar.gz "here"). Simply download it and unpack it anywhere you like. 
 
 To install the bundle simply run the following in your terminal:
 
 <pre><code>git clone https://github.com/mads379/ensime.tmbundle.git
 open ensime.tmbundle</code></pre>
 
-Add the shell variable ENSIME_HOME in TextMate -> Preferences... -> Advanced -> Shell Variables to the root of your ENSIME distribution.
+Add the shell variable ENSIME_HOME in TextMate -> Preferences... -> Advanced -> Shell Variables to the root of your ENSIME distribution (This would be the path to the folder you just unpacked). For me this is <code>/Users/Mads/dev/tools/emacs\_config/ensime\_2.8.1-0.3.8</code>
 
 About
 -----
