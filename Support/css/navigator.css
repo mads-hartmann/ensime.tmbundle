@@ -1,0 +1,92 @@
+body {
+  font-family: Helvetica;
+  padding: 0px;
+  margin: 0px;
+}
+
+p {
+  margin: 0px;
+  padding: 0px 0px 0px 18px;
+  font-size: 13px;
+  display: inline;
+}
+
+p span {
+  color: #c1c1c1;
+  padding-left: 10px;
+  font-size: 12px;  
+}
+
+a {
+  color: #000;
+  text-decoration: none;
+}
+
+ul {
+  list-style: none;
+  padding-left: 5px;
+  margin: 5px 0px;
+}
+
+p.p {
+  background: url("../images/package.png") no-repeat top left;
+}
+
+p.object {
+  background: url("../images/object.png") no-repeat top left;
+}
+p.trait {
+  background: url("../images/trait.png") no-repeat top left;
+}
+p.class {
+  background: url("../images/class.png") no-repeat top left;
+}
+p.f {
+  background: url("../imgs/function.png") no-repeat top left;
+}
+p.V {
+  background: url("../imgs/variable.png") no-repeat top left;
+}
+
+.top {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  height: 39px;
+  background: #ededed;
+  color: #000;
+  border-bottom: 1px solid #bebebe;
+  border-top: 1px solid #bebebe;
+}
+
+.top input {
+  position: absolute;
+  top: 10px;
+  left: 5px;
+  right: 5px;
+}
+
+#content {
+  position: absolute;
+  overflow: scroll;
+  top: 40px;
+  left: 0px;
+  right: 0px;
+  bottom: 20px;
+}
+
+#footer {
+  position: absolute;
+  bottom: 0px;
+  left: 0px;
+  right: 0px;
+  height: 20px;
+  background: #ededed;
+  border-bottom: 1px solid #bebebe;
+  border-top: 1px solid #bebebe;
+}
+
+li.selected {
+  background: #d4d4d4;
+}

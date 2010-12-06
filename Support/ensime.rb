@@ -31,6 +31,7 @@ module Ensime
     
     def initialize(print_error_message = true)
       begin
+        @html_helper = HTMLHelper.new
         @socket = connect
       rescue 
         @socket = nil
@@ -129,6 +130,80 @@ module Ensime
         else
           puts response[0][1][1][1]
         end
+      end
+    end
+    
+    #
+    # This will display all the packages and memebers of those packages
+    # in the entire proejct. 
+    #
+    # The members will have links that will open the declartaion of 
+    # the type in textmate. 
+    #
+    def navigate
+      if !@socket.nil?
+        project_config = read_project_file
+        if !project_config.nil?
+          project_parsed = @parser.parse_string(project_config)
+          project_package = look_up(":project-package",project_parsed[0])
+          msg = create_message('(swank:inspect-package-by-path "com.sidewayscoding")')
+          @socket.print(msg)
+          response_parsed = @parser.parse_string(get_response(@socket))
+          root_package = look_up(":ok",look_up(":return",response_parsed[0]))
+          root_package_name = look_up(":full-name",root_package)
+          
+          list = look_up(":members",root_package).collect do |member|
+            info_type = look_up(":info-type",member)
+            if info_type.nil?
+              navigate_print_member(member)
+            else 
+              navigate_print_package(look_up(":members",member))
+            end
+          end
+          @html_helper.makeHTMLHeader()
+          @html_helper.makeHTMLTop()
+          print "<div id='content'>"
+          print "<ul>#{list.to_s}</ul>"
+          print "</div>"
+          @html_helper.makeHTMLFooter()
+        else
+          puts "Please create a .ensime project file and place it your\nprojects root directory"
+        end
+      end
+    end
+    
+    #
+    # returns a string (html) representation of a single member of a package
+    # 
+    # Note: It will only display the members that are acctually defined in the
+    #       code. This means that compiler generated objects/classes won't show
+    #
+    def navigate_print_member(member)
+      pos = look_up(":pos",member)
+      if !pos.nil?
+        name = look_up(":name",member)
+        decl_as = look_up(":decl-as",member)
+        file = look_up(":file",pos)
+        offset = look_up(":offset",pos)
+        line = positionToLineNumber(file,offset.to_i)
+        path = file.gsub(ENV["TM_PROJECT_DIRECTORY"]+"/","")
+        url = "txmt://open/?url=file://#{file}&line=#{line.to_s}"
+        link = "<a href='#{url}'>#{name}</a>"   
+        "<li class='selectable'><p class='#{decl_as}'>#{link}<span>#{path}</span></p></li>"
+      else
+        ""
+      end
+    end
+    
+    #
+    # returns a string (html) representation of a package and all of it's members
+    #
+    def navigate_print_package(members)       
+      if !members.nil? 
+        arr = members.collect do |member| navigate_print_member(member) end 
+        arr.to_s
+      else
+        ""
       end
     end
     
@@ -448,10 +523,34 @@ module Ensime
         return nil
       end
     end
+    
+    #
+    # This will look up a specific value in an array
+    # returned from the sexpistol parser. 
+    #
+    # It returns nil if the value doesn't exist
+    def look_up(name, arr) 
+      length = arr.length
+      result = length.times.to_a.select do |index|
+        value = arr[index].to_s
+        name == value
+      end
+      if result.length > 0 
+        arr[result[0]+1] 
+      else 
+        nil 
+      end
+    end
+    
+    def positionToLineNumber(file,position)
+      contents = File.open(file, "rb") { |f| f.read(position) }
+      contents.count("\n")+1
+    end
+    
   end
   
   class LittleHelper
-    
+        
     def register_images_for_completion
       imgpath = ENV['TM_BUNDLE_SUPPORT']+'/images'
       images = {
@@ -465,6 +564,47 @@ module Ensime
      	`"$DIALOG" images --register  '#{images.to_plist}'`
     end
     
+  end
+  
+  # 
+  # This class takes care of all the nasty html strings. 
+  # 
+  class HTMLHelper 
+    def makeHTMLHeader
+      root = "file://"+ENV['TM_BUNDLE_SUPPORT']
+      puts "<link rel='stylesheet' href='#{root}/css/navigator.css' type='text/css' media='screen' title='no title' charset='utf-8'>"
+      puts "<script src='#{root}/js/jquery-1.4.2.min.js' type='text/javascript' charset='utf-8'></script>"	
+      puts "<script src='#{root}/js/navigator.js' type='text/javascript' charset='utf-8'></script>"	
+      puts "<script type='text/javascript' charset='utf-8'>"
+      puts "var root = '#{root}'"
+      puts "</script>"	
+    end
+
+    def makeHTMLTop
+      puts "<div class='top'><input type='search' /></div>"
+    end
+
+    def makeHTMLFooter 
+      puts "<div id='footer'></div>"
+    end
+
+    # def makeHTMLListOfTypes(items,selection)
+    #   puts "<ul>"
+    #   items.each do |item|
+    #     if (item['name'] == selection) 
+    #       puts "<li class='selected'>" 
+    #     else
+    #       puts "<li>"
+    #     end
+    #     puts "<span class='package'>" + package_of_path(item['path']) + "</span>"
+    #     puts "<p class='" + item['type'] + "'>" + item['name'] 
+    #     puts "</p>"  
+    #     puts "<span class='path'>" + item['path'] + "</span>"
+    #     puts "<span class='line'>" + item['line'] + "</span>"
+    #     puts "</li>"
+    #   end
+    #   puts "</ul>"
+    # end
   end
   
 end
