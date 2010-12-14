@@ -146,7 +146,7 @@ module Ensime
         if !project_config.nil?
           project_parsed = @parser.parse_string(project_config)
           project_package = look_up(":project-package",project_parsed[0])
-          msg = create_message('(swank:inspect-package-by-path "com.sidewayscoding")')
+          msg = create_message('(swank:inspect-package-by-path "'+project_package+'")')
           @socket.print(msg)
           response_parsed = @parser.parse_string(get_response(@socket))
           root_package = look_up(":ok",look_up(":return",response_parsed[0]))
