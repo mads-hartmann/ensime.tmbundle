@@ -16,9 +16,11 @@ require ENV['TM_BUNDLE_SUPPORT'] + '/ensime.rb'
 
 if ENV['ENSIME_HOME'].nil?
 	puts "&lt;h2&gt;Please set the ENSIME_HOME shell variable.&lt;/h2&gt;"
+elsif ENV['TM_PROJECT_DIRECTORY'].nil?
+    puts "&lt;h2&gt;Please set the TM_PROJECT_DIRECTORY shell variable.&lt;/h2&gt;"
 else
 	ENSIME_HOME = ENV['ENSIME_HOME']
-	ENSIME_SH = "cd '#{ENSIME_HOME}' &amp;&amp; ./bin/server.sh"
+	ENSIME_SH = "cd '#{ENSIME_HOME}' &amp;&amp; ./bin/server"
 	TEMP_FILE = ENV['TM_PROJECT_DIRECTORY'] + "/ensime_port"
 
      Ensime::LittleHelper.new.register_images_for_completion
