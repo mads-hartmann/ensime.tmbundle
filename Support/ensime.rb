@@ -19,6 +19,10 @@ require BUNDLE_LIB + "sexpistol/sexpistol.rb"
 module Ensime
   
   MESSAGE_HEADER_SIZE = 6
+  if ENV['TM_PROJECT_DIRECTORY'].nil?
+    puts "Please set the TM_PROJECT_DIRECTORY shell variable to the current project directory where the .ensime configuration file can be found."
+    exit 1
+  end
   ENSIME_MESSAGE_COUNTER_FILE = ENV['TM_PROJECT_DIRECTORY'] + "/.ensime.msg.counter"
   ENSIME_PORT_FILE = ENV['TM_PROJECT_DIRECTORY'] + "/ensime_port"
     
